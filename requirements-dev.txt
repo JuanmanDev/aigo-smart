@@ -1,0 +1,3 @@
+# Dependencies: none third-party required for tests
+# (cryptography is optional — a pure-python fallback exists for AES)
+cryptography>=41.0.0

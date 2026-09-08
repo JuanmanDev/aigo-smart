@@ -1,0 +1,17 @@
+sync_devices:
+  name: Sync devices
+  description: Re-fetch the device list from the AigoSmart cloud and reload the integration.
+discover_local:
+  name: Discover local devices
+  description: Run ALCS multicast discovery on the LAN and log discovered AigoSmart devices.
+add_device:
+  name: Add device
+  description: >
+    Start the guided Add-Device flow. Discovers Aigostar devices in pairing mode
+    via Bluetooth (when the Home Assistant bluetooth integration is active) and
+    via WiFi (devices reported by already-bound devices on the LAN).
+discover_bluetooth:
+  name: Discover Bluetooth devices
+  description: >
+    Scan for Aigostar BLE devices (Breeze pairing service 0xFEB3) through the
+    Home Assistant bluetooth integration and fire aigosmart_ble_found events.

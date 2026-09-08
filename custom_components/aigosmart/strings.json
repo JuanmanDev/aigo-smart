@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "AigoSmart account (unofficial integration)",
+        "description": "Enter the email and password you use in the AigoSmart app.",
+        "data": {
+          "email": "Email or phone",
+          "password": "Password"
+        }
+      },
+      "code": {
+        "title": "Verification code",
+        "description": "A verification code was sent to your email. Enter it to continue.",
+        "data": {
+          "security_code": "Verification code"
+        }
+      },
+      "add_device": {
+        "title": "Add a device",
+        "description": "Devices in pairing mode found via Bluetooth and WiFi. Put your device in pairing mode first (usually by holding its power button for 5 seconds).",
+        "data": {
+          "discovered": "Device"
+        }
+      },
+      "wifi": {
+        "title": "WiFi credentials",
+        "description": "Enter the WiFi network the new device should join. Provisioning happens over Bluetooth (works via ESPHome bluetooth proxy).",
+        "data": {
+          "ssid": "WiFi network name (SSID)",
+          "wifi_password": "WiFi password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect / login failed. Check your credentials.",
+      "invalid_code": "Invalid verification code.",
+      "unknown_device": "Selected device is no longer visible.",
+      "provision_failed": "Provisioning failed. Make sure the device is still in pairing mode and near the Bluetooth adapter/proxy, then try again."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "not_loaded": "The AigoSmart integration must be set up first.",
+      "no_devices_found": "No Aigostar devices in pairing mode were found. Hold the device's power button for ~5 seconds and try again."
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "domain": "aigosmart",
+  "name": "AigoSmart (unofficial)",
+  "codeowners": [
+    "@JuanmanDev"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/JuanmanDev/aigo-smart",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/JuanmanDev/aigo-smart/issues",
+  "requirements": [
+    "cryptography>=41.0.0"
+  ],
+  "after_dependencies": [
+    "bluetooth"
+  ],
+  "version": "0.4.0"
+}

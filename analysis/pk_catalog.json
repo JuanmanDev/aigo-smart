@@ -1,0 +1,3048 @@
+{
+ "products": {
+  "a1lu9TUm34D": {
+   "name": "一位欧式窗帘开关_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CurtainSwitch",
+   "device_type": "Electrician"
+  },
+  "a1SiH7M3puN": {
+   "name": "GPH-20XA_小匠_达沃斯_WB",
+   "comm_mode": "WiFi",
+   "category": "Heater",
+   "device_type": "Appliances"
+  },
+  "a1L836QOWgx": {
+   "name": "宠物饮水机_ZY_待定_WB",
+   "comm_mode": "WiFi",
+   "category": "WaterDispenser",
+   "device_type": "Pet"
+  },
+  "a1WNLq4rtty": {
+   "name": "10000Btu_金鸿盛_XJ_WB",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1ZZWh3Axpr": {
+   "name": "12000Btu_金鸿盛_XJ_WB",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1AKvbbOGYZ": {
+   "name": "智能灯串_C_6W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "StringOfLights",
+   "device_type": "Lighting"
+  },
+  "a1JBIrKrQAw": {
+   "name": "智能移动空调12000Btu_NB051",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1dJtOXTfp5": {
+   "name": "移动空调8000Btu_XJ_NB051_M",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1v3HIyqt0n": {
+   "name": "移动空调10000Btu_XJ_NB051_M",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1Og3Wo1NEg": {
+   "name": "移动空调12000Btu_XJ_NB051_M",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1sSf1sY6zo": {
+   "name": "移动空调14000Btu_XJ_NB051_M",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1mZFNZz7pq": {
+   "name": "塔扇(JTF-13R)_小匠_聚宝_WB",
+   "comm_mode": "WiFi",
+   "category": "TowerFan",
+   "device_type": "Appliances"
+  },
+  "a1JLKGWCSzO": {
+   "name": "G45_C_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a188vZXlwyc": {
+   "name": "一位欧式窗帘开关_NB023",
+   "comm_mode": "WiFi",
+   "category": "CurtainSwitch",
+   "device_type": "Electrician"
+  },
+  "a10e9XKy2d2": {
+   "name": "猫砂盆_NOTTY_小匠_WB",
+   "comm_mode": "WiFi",
+   "category": "CatLitter",
+   "device_type": "Pet"
+  },
+  "a1ws368tfMN": {
+   "name": "猫砂盆_锋亚_庆科_WB",
+   "comm_mode": "WiFi",
+   "category": "CatLitter",
+   "device_type": "Pet"
+  },
+  "a1rkDWPOnX9": {
+   "name": "英式计量插座_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MeteredSocket",
+   "device_type": "Electrician"
+  },
+  "a1EKtUmsBAD": {
+   "name": "意式墙壁插座_16A_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a19RBE2h5Xd": {
+   "name": "烟感_刻锐_ZY_WB",
+   "comm_mode": "BLE Mesh",
+   "category": "Sensor",
+   "device_type": "Electrician"
+  },
+  "a15xuTwVNrR": {
+   "name": "门磁_刻锐_ZY_WB",
+   "comm_mode": "BLE Mesh",
+   "category": "Sensor",
+   "device_type": "Electrician"
+  },
+  "a12SGfmiQ56": {
+   "name": "几何灯_RGBCCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1CkFb2Tvn2": {
+   "name": "云彩灯_8W_TG7221_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1sW0Thc1KO": {
+   "name": "空气净化器_清风_小匠_WB",
+   "comm_mode": "WiFi",
+   "category": "Airpurifier",
+   "device_type": "Appliances"
+  },
+  "a1W9UhGTvgu": {
+   "name": "智能云彩灯_4W_TG7221_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a14gkx3crvU": {
+   "name": "壁灯_RGBCCT_6W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "WallLamp",
+   "device_type": "Lighting"
+  },
+  "a1u6iDGWqIH": {
+   "name": "智能云彩太阳能灯_4W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1nYvCHR9r6": {
+   "name": "壁灯_CCT_6W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "WallLamp",
+   "device_type": "Lighting"
+  },
+  "a1VmTCT4uu5": {
+   "name": "猫砂盆-锋亚",
+   "comm_mode": "WiFi",
+   "category": "CatLitter",
+   "device_type": "Pet"
+  },
+  "a1zUfz40lTT": {
+   "name": "两头天花射灯_RGBCCT_12W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Spotlight",
+   "device_type": "Lighting"
+  },
+  "a1KIrCo4D2i": {
+   "name": "三头天花射灯_RGBCCT_18W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Spotlight",
+   "device_type": "Lighting"
+  },
+  "a1PNKMankdl": {
+   "name": "射灯_RGBCCT_6W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Spotlight",
+   "device_type": "Lighting"
+  },
+  "a14iDhMHe9k": {
+   "name": "壁灯_RGBCCT_12W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "WallLamp",
+   "device_type": "Lighting"
+  },
+  "a1nhoYVf6BN": {
+   "name": "法式计量插座_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MeteredSocket",
+   "device_type": "Electrician"
+  },
+  "a1Avuf3ojJZ": {
+   "name": "意式计量插座_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MeteredSocket",
+   "device_type": "Electrician"
+  },
+  "a1dLe95H3o7": {
+   "name": "智能宠物烘干箱_锋亚_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DryingOven",
+   "device_type": "Pet"
+  },
+  "a12NTeFNuwS": {
+   "name": "智能加热狗垫_锋亚_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "PetThermostat",
+   "device_type": "Pet"
+  },
+  "a18SsvKHvQL": {
+   "name": "智能冷暖猫窝_锋亚_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CatBed",
+   "device_type": "Pet"
+  },
+  "a1MqVKrp9JA": {
+   "name": "空气炸锅_7L_小匠_WB",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a19uKBjj54u": {
+   "name": "德式防水排插_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "WaterproofOutlet",
+   "device_type": "Electrician"
+  },
+  "a1o0ce8lo2q": {
+   "name": "智能云彩球泡_5W_WIDE_PRE_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1A3AH75psY": {
+   "name": "插座台灯_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "SocketTableLamp",
+   "device_type": "Lighting"
+  },
+  "a191KWgv5BZ": {
+   "name": "智能水族_ZS029_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Aquarium",
+   "device_type": "Pet"
+  },
+  "a1QVW3v1kDE": {
+   "name": "德式计量插座_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MeteredSocket",
+   "device_type": "Electrician"
+  },
+  "a1qWjyt9Iey": {
+   "name": "喂食器_6L_宠元_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Feeder",
+   "device_type": "Pet"
+  },
+  "a16mmsDmwo6": {
+   "name": "智能云彩太阳能地插灯_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a13NX4zvnQe": {
+   "name": "智能云彩台灯_TG7220_5W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1C97KKRJo6": {
+   "name": "可视喂食器_6L_宠元_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Feeder",
+   "device_type": "Pet"
+  },
+  "a1GtK95oz2i": {
+   "name": "取暖器_WB",
+   "comm_mode": "WiFi",
+   "category": "Heater",
+   "device_type": "Appliances"
+  },
+  "a1PXn5viOnd": {
+   "name": "智能水壶_格来德_小匠_WB",
+   "comm_mode": "WiFi",
+   "category": "Kettle",
+   "device_type": "Appliances"
+  },
+  "a19iFUxg8eA": {
+   "name": "喂食器_4L_ITON_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Feeder",
+   "device_type": "Pet"
+  },
+  "a11ONXCCOor": {
+   "name": "1位德意式插座_16A_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a1oSvn5VGGH": {
+   "name": "1位通断器_10A_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CircuitBreaker",
+   "device_type": "Electrician"
+  },
+  "a1Kpw683HYX": {
+   "name": "意式一位开关_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1yKZqQ15Ms": {
+   "name": "意式二位开关_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1AkjWYTfjj": {
+   "name": "直下式筒灯_RGBCCT_18W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1o2O3IShrk": {
+   "name": "直下式筒灯_RGBCCT_15W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1vLSHgpNbe": {
+   "name": "直下式筒灯_RGBCCT_9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1N8Bje5jS3": {
+   "name": "德式两位开关_10A_CM_ZY_BM",
+   "comm_mode": "BLE Mesh",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1xMOAozhXA": {
+   "name": "G45_CCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1614yZlsXl": {
+   "name": "A60_RGBCCT_E27_11W限流测试",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1KAnthQy80": {
+   "name": "德式一位开关_10A_CM_ZY_BM",
+   "comm_mode": "BLE Mesh",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a186uVgUSrC": {
+   "name": "工矿灯_C_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MiningLamp",
+   "device_type": "Lighting"
+  },
+  "a1yU0QGHMLD": {
+   "name": "A60_CCT_20W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1o2J4TJMCY": {
+   "name": "投光灯_RGBW_PW_KSD_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FloodLight",
+   "device_type": "Lighting"
+  },
+  "a1YKOWcTHqT": {
+   "name": "A60_RGBCCT_12W_SP_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1AaGnwAcP1": {
+   "name": "A60_RGBCCT_15W_SP_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1XXUaGjbHT": {
+   "name": "直下筒灯_CCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1edG13KmkS": {
+   "name": "超薄吸顶灯_RGBCCT_36W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1PeLqFwANq": {
+   "name": "超薄吸顶灯_RGBCCT_24W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1gXHGHPIV6": {
+   "name": "吸顶灯_CCT_24W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1zhbM2dtcU": {
+   "name": "吸顶灯_CCT_36W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1DgVpZ1Gj0": {
+   "name": "吸顶灯_RGBCCT_36W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1tePmWFYQ2": {
+   "name": "吸顶灯_RGBCCT_24W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1mFvBLQo2P": {
+   "name": "法式转换头_10A_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1fPAAw1iaO": {
+   "name": "意式转换头_10A_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1aeYLqeLsb": {
+   "name": "风扇灯_CCT_40W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FanLighting",
+   "device_type": "Lighting"
+  },
+  "a180PpkuyP6": {
+   "name": "风扇灯_RGBCCT_40W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FanLighting",
+   "device_type": "Lighting"
+  },
+  "a1GDkItPwqr": {
+   "name": "猫砂盆",
+   "comm_mode": "WiFi",
+   "category": "CatLitter",
+   "device_type": "Pet"
+  },
+  "a1dZiNRFbqO": {
+   "name": "吊扇灯_CCT_40W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FanLighting",
+   "device_type": "Lighting"
+  },
+  "a1Uvz9mtLGE": {
+   "name": "吊扇灯_CCT_40W_CM_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "FanLighting",
+   "device_type": "Lighting"
+  },
+  "a16jn5e0fTO": {
+   "name": "风扇灯_RGBCCT_40W_CM_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "FanLighting",
+   "device_type": "Lighting"
+  },
+  "a1S1frrAetc": {
+   "name": "风扇灯_CCT_40W_CM_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "FanLighting",
+   "device_type": "Lighting"
+  },
+  "a1IerD2DVcq": {
+   "name": "C37_CCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1HAvIhDbXF": {
+   "name": "A60_RGBCCT_20W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1frMglCNro": {
+   "name": "A60_CCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1kFbjno2QK": {
+   "name": "GU10_CCT_6W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1vXVB5ILNK": {
+   "name": "GU10_CCT_6W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1k2UGr95b0": {
+   "name": "GU10_RGBCCT_6-5W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1vVVo7Wz0V": {
+   "name": "GU10_RGBCCT_4-9W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1B9J9e9Pyp": {
+   "name": "G45_RGBCCT_6-5W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Vf0aKs011": {
+   "name": "G45_RGBCCT_6-5W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1fJN9cJcnG": {
+   "name": "G45_RGBCCT_4-9W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a17KKZQwKJO": {
+   "name": "G45_RGBCCT_4-9W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1l9hgleBjp": {
+   "name": "A60_RGBCCT_9W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Q4nPMBDx0": {
+   "name": "C37_RGBCCT_6-5W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1b3Y5hEBKf": {
+   "name": "C37_RGBCCT_4-9W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Ezb9menCZ": {
+   "name": "C37_RGBCCT_6-5W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1dU2sZATR6": {
+   "name": "吸顶灯_CCT_36W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a16IZgk7qxJ": {
+   "name": "吸顶灯_RGBCW_18W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1dEsXX34f3": {
+   "name": "吸顶灯_CW_24W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a12vP1N0Lxg": {
+   "name": "德式1转1转换器_10A_250V_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1AYbVErnH4": {
+   "name": "吸顶灯_CW_18W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1NRP76zuAi": {
+   "name": "智能云彩太阳能壁灯_3W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1Yz06QRapp": {
+   "name": "智能云彩太阳能吊灯_3W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1ItkaskE6S": {
+   "name": "智能云彩吊灯_8W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1G5dhg4wzZ": {
+   "name": "智能云彩壁灯_8W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1rW9qFoyX9": {
+   "name": "智能云彩地灯_8W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1J5zlgOCjE": {
+   "name": "智能云彩灯_2W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a17kGuMbFuz": {
+   "name": "智能云彩台灯_5W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1l4qpLKjlE": {
+   "name": "智能云彩球泡_5W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a117IHz4hbE": {
+   "name": "A60_RGBCCT_E27_15W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ymR60Z0eC": {
+   "name": "A60_RGBCCT_E27_12W_SP_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1hvWh1STgx": {
+   "name": "背光吸顶灯_RGBCCT_36W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1ILmf6Hbtc": {
+   "name": "背光吸顶灯_RGBCCT_24W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1JXMidZLrl": {
+   "name": "DC调光面板",
+   "comm_mode": "BLE Mesh",
+   "category": "Dimming_panel",
+   "device_type": "Electrician"
+  },
+  "a1nYfzxLRTW": {
+   "name": "AC调光开关_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Dimming_panel",
+   "device_type": "Electrician"
+  },
+  "a1X4qX1J3fR": {
+   "name": "直下筒灯_RGBCCT_3W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1MPPO30B01": {
+   "name": "直下筒灯_CCT_NW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1MZ4RrAXO4": {
+   "name": "单火两位开关_10A_CM_ITON_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1na96iAJ5u": {
+   "name": "单火一位开关_10A_CM_ITON_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1yv8KLH8fU": {
+   "name": "智能云彩球泡_18W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1d6JLanVq2": {
+   "name": "吸顶灯_RGBCW_24W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1UbdJv9lSh": {
+   "name": "吸顶灯_RGBCCT_36W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1jjXDLVMzB": {
+   "name": "意式两位开关_10A_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1i9mk73sY7": {
+   "name": "一转一转换器_10A_250V_ZY02_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1ha0LZsOUz": {
+   "name": "幻彩灯带_RGBIC_24W_10M_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1wXDVA87AW": {
+   "name": "一位通断器_10A_CM_ITON_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CircuitBreaker",
+   "device_type": "Electrician"
+  },
+  "a1yMnJA7Zt4": {
+   "name": "4L智能加湿器_小匠_乐鹏_WB",
+   "comm_mode": "WiFi",
+   "category": "Humidifier",
+   "device_type": "Appliances"
+  },
+  "a1V1XlFV4Hn": {
+   "name": "6L智能加湿器_小匠_乐鹏_WB",
+   "comm_mode": "WiFi",
+   "category": "Humidifier",
+   "device_type": "Appliances"
+  },
+  "a1XPXXs7XJJ": {
+   "name": "二位通断器_10A_ITON_BM",
+   "comm_mode": "BLE Mesh",
+   "category": "CircuitBreaker",
+   "device_type": "Electrician"
+  },
+  "a163VQp0e0e": {
+   "name": "宠物饮水机_庆科_郎全_WB",
+   "comm_mode": "WiFi",
+   "category": "WaterDispenser",
+   "device_type": "Pet"
+  },
+  "a1M9SqxU9N6": {
+   "name": "智能筒灯_CCT_15W_ZHQ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1xpIwl06qt": {
+   "name": "智能筒灯_CCT_18W_ZHQ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1YvajJOWfb": {
+   "name": "智能筒灯_CCT_9W_ZHQ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1AA1aRmqLE": {
+   "name": "工矿灯_C_150W_JK_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MiningLamp",
+   "device_type": "Lighting"
+  },
+  "a1KJIcF1wez": {
+   "name": "工矿灯_C_100W_JK_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MiningLamp",
+   "device_type": "Lighting"
+  },
+  "a1fEi5pK7F4": {
+   "name": "工矿灯_CCT_150W_JK_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MiningLamp",
+   "device_type": "Lighting"
+  },
+  "a1h0xFzC4z5": {
+   "name": "工矿灯_CCT_100W_JK_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "MiningLamp",
+   "device_type": "Lighting"
+  },
+  "a1wBko2KlkV": {
+   "name": "智能遥控器_RGBCCT_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Appliances"
+  },
+  "a1UOVuC5rff": {
+   "name": "太阳能灯_C_FTD73_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "SolarLamp",
+   "device_type": "Lighting"
+  },
+  "a1tgw5jbxTS": {
+   "name": "A60_RGBCCT_12W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1JRzVDdXJd": {
+   "name": "无影对接净化灯_C_50W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a1yPf1OJa3v": {
+   "name": "无影对接净化灯_CCT_50W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a1jdOGwKfcj": {
+   "name": "无影对接净化灯_C_40W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a1LAkZpZ4Ew": {
+   "name": "无影对接净化灯_CCT_40W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a1zuQFkGMlx": {
+   "name": "无影对接净化灯_CCT_30W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a1whFt4qMmA": {
+   "name": "无影对接净化灯_C_30W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a18dLKY0x42": {
+   "name": "无影对接净化灯_C_18W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a1n7H7opKBP": {
+   "name": "无影对接净化灯_CCT_18W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PurifyingLamp",
+   "device_type": "Lighting"
+  },
+  "a124FyYrJqz": {
+   "name": "智能台灯_RGBCCT_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "SmartDeskLamp",
+   "device_type": "Lighting"
+  },
+  "a1XIR7LjLKl": {
+   "name": "智能洗墙壁灯_CCT_12W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "SmartWallLamp",
+   "device_type": "Lighting"
+  },
+  "a1esWraDbg8": {
+   "name": "智能洗墙壁灯_RGBCCT_12W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "SmartWallLamp",
+   "device_type": "Lighting"
+  },
+  "a1j5KoUqTC0": {
+   "name": "智能防潮灯_CCT_15W_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a11dqdjoopP": {
+   "name": "面板灯_CCT_40W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a18il4Pks5W": {
+   "name": "面板灯_RGBCCT_40W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1L5563zSAp": {
+   "name": "面板灯_60W_CCT_TX_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1azGUx45Nm": {
+   "name": "面板灯_24W_CCT_TX_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1lGhTrl6tk": {
+   "name": "面板灯_60W_RGBCCT_TX_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1W12YkfGNc": {
+   "name": "面板灯_24W_RGBCCT_TX_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1icEDJyiz4": {
+   "name": "灯丝灯_RGBW_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a15hWKmKvWl": {
+   "name": "灯丝灯_CCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1QG60tCPH0": {
+   "name": "灯丝灯_RGBCCT_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a12j1FJERir": {
+   "name": "GU10_C_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1pTCad06KG": {
+   "name": "GU10_RGBCCT_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a11xqp9wGNV": {
+   "name": "GU10_C_6-5W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1rfZjCKpnX": {
+   "name": "GU10_RGBCCT_6-5W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1PaYvImcKc": {
+   "name": "C37_C_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1xNZjnhMg9": {
+   "name": "G45_RGBCCT_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ugb4j2xjH": {
+   "name": "单色投光灯_NW_KSD_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FloodLight",
+   "device_type": "Lighting"
+  },
+  "a1h73KNXyHK": {
+   "name": "筒灯_RGBCCT_18W_ZHQ_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1T7Cqb1tOC": {
+   "name": "筒灯_RGBCCT_15W_ZHQ_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a17rXWbZh3y": {
+   "name": "筒灯_RGBCCT_9W_ZHQ_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1FijTWIvcX": {
+   "name": "筒灯_RGBCCT_6W_ZHQ_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1oGvWaBo6E": {
+   "name": "筒灯_CCT_NW_ZHQ_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a19MQvbBTsX": {
+   "name": "G45_C_6-5W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1thbSOdhpf": {
+   "name": "G45_RGBCCT_6-5W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1VVnApAXCc": {
+   "name": "G45_9W_C_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a111bFIq6VB": {
+   "name": "G45_9W_RGBCCT_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1w0y2zAFs8": {
+   "name": "筒灯_RGBCCT_6W_TUX_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1iKF4D1ju9": {
+   "name": "筒灯_CCT_NW_TUX_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a177T4KGdMp": {
+   "name": "筒灯_RGBCCT_18W_TUX_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1uh0UxUu3Z": {
+   "name": "筒灯_RGBCCT_15W_TUX_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1mviZWhdFf": {
+   "name": "筒灯_RGBCCT_9W_TUX_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1AQyIvsIuz": {
+   "name": "直下式面板灯_CCT_40W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1JntW8diYW": {
+   "name": "直下式面板灯_RGBCCT_40W_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1VnKZ5IGPU": {
+   "name": "T8塑料管_C_18W_CM_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1TfDC0AzAv": {
+   "name": "T8塑料管_CCT_18W_CM_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1jfKlva0pt": {
+   "name": "T8塑料管_C_10W_CM_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1BEr3PSlOf": {
+   "name": "T8塑料管_CCT_10W_CM_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1AFnsyOCBZ": {
+   "name": "智能吸顶灯_CCT_36W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1CjDDAvSed": {
+   "name": "智能吸顶灯_CCT_24W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1IUA1vyAqQ": {
+   "name": "智能吸顶灯_CCT_18W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1WL4ldmNVh": {
+   "name": "智能吸顶灯_CCT_12W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1NciPLTRlk": {
+   "name": "智能吸顶灯_RGBCCT_36W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1mbAadtw5G": {
+   "name": "智能吸顶灯_RGBCCT_24W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1RGpt9aifp": {
+   "name": "智能吸顶灯_RGBCCT_18W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1oWvv9ah9w": {
+   "name": "智能吸顶灯_RGBCCT_12W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1Xmr6oK6nO": {
+   "name": "投光灯_RGBW_NW_KSD_FTD_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "FloodLight",
+   "device_type": "Lighting"
+  },
+  "a1fyo8JZ4Kj": {
+   "name": "吸顶灯_RGBCCT_24W_JX001_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1o4kYvoPXk": {
+   "name": "吸顶灯_RGBCCT_40W_JX001_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1xW0ewiT9G": {
+   "name": "GU10_CCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1xpLwdEZGs": {
+   "name": "C37_RGBCCT_4-9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1dNXIiFMfA": {
+   "name": "C37_C_6-5W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1yXlPazrmG": {
+   "name": "C37_RGBCCT_6-5W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1hDagvw7fQ": {
+   "name": "A60_C_9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1x26ff3abl": {
+   "name": "A60_RGBCCT_9W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1DK1OEKVTN": {
+   "name": "A60_C_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a119GPS5eaD": {
+   "name": "A60_RGBCCT_15W_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1jODkSlLPA": {
+   "name": "吸顶灯_CCT_18W_JX001_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a17f91ILgTZ": {
+   "name": "吸顶灯_CCT_40W_JX001_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1XT5VQLlpo": {
+   "name": "STRIP_RGBCCT_PW_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ljxz9rLFZ": {
+   "name": "STRIP_RGBW_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1MNQ9TX9AK": {
+   "name": "STRIP_RGB_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a18oNmCAGVZ": {
+   "name": "A60_RGBCCT_E27_15W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Ml7CC7XRe": {
+   "name": "智能筒灯_RGBCCT_24W_ZY_TX_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1YKcWtP8cj": {
+   "name": "转换头_10A_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1i5GTs1u4P": {
+   "name": "插座_16A_CM_ITON_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a1NVLJheheB": {
+   "name": "意式一位开关_10A_CM_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1XkuWwPFwv": {
+   "name": "Lighting_RGB_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a143lLo33ms": {
+   "name": "Lighting_RGBW_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a18fUTmVFF7": {
+   "name": "STRIP_RGB_ZY",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a10BVQRtTXL": {
+   "name": "STRIP_RGBW_ZY",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1kMI1ZzD5n": {
+   "name": "智能筒灯_RGBCCT_18W_ZY_TX",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1e8GWnrsBg": {
+   "name": "超薄吸顶灯_RGBCCT_25W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1Hmx4LDSbJ": {
+   "name": "超薄吸顶灯_RGBCCT_25W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1QvJlpT9V5": {
+   "name": "超薄吸顶灯_RGBCCT_22W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1uvjSu9Ug9": {
+   "name": "乐居扫地机",
+   "comm_mode": "WiFi",
+   "category": "SweepingMachine",
+   "device_type": "Appliances"
+  },
+  "a143fQHYYjx": {
+   "name": "吸顶灯_RGBCCT_18W_JX001_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a17ZaqLqJSZ": {
+   "name": "超薄吸顶灯_RGBCCT_19W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1XAONzhFSY": {
+   "name": "Lighting_C_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1JmUo0xUdJ": {
+   "name": "吸顶灯_CCT_24W_JX001_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1SH8dKNMbc": {
+   "name": "G45_RGBCCT_6-5W_ZY",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Kt5aMVw1y": {
+   "name": "幻彩灯带_RGBIC_24W_5M_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1sWjZp6MCk": {
+   "name": "C37_RGBCCT_4-9W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a15tRb0pigw": {
+   "name": "A60_RGBCCT_9W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1RKAteM196": {
+   "name": "ST64RGBCCT_4-9W_ITON_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1fV6daJILQ": {
+   "name": "A60RGBW_4-9WE27_ITON_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ADEJRHDMq": {
+   "name": "ST64RGBW_4-9WE27_ITONXM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Sz6hkgnSG": {
+   "name": "G80RGBW_4-9WE27_ITON_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Z15iOwkoL": {
+   "name": "G95RGBW_4-9WE27_ITON_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1sdYz7fdb0": {
+   "name": "G125RGBW_4-9WE27_ITON_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1HBTbC09wL": {
+   "name": "一转一转换器_10A_250V_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1yvJ01bF3P": {
+   "name": "超薄吸顶灯_RGBCCT_22W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a10T5JFTzgt": {
+   "name": "Lighting_CCT_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a16S6dFGSrD": {
+   "name": "GU10_RGBCCT_4-9W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1qGN1giMqp": {
+   "name": "智能筒灯_RGBCCT_9W_ZY_TX_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1uJqKHPeaM": {
+   "name": "智能筒灯_RGBCCT_15W_ZY_TX_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1SLRbuMVip": {
+   "name": "一转一转换器_16A_250V_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a19Vqas6xzf": {
+   "name": "智能筒灯_RGBCCT_24W_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1bhcFwySt8": {
+   "name": "智能筒灯_RGBCCT_18W_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1nzDfGWltb": {
+   "name": "A60_RGBCCT_E27_12W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1GT31toCfI": {
+   "name": "G125RGBW_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1j8YqTPOVn": {
+   "name": "G95RGBW_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1B16eC2LKQ": {
+   "name": "G80RGBW_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1eCTUl2Fok": {
+   "name": "A60RGBW_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1vcHimzd2u": {
+   "name": "DSD_G45CCT_4-5WE14_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1ssL2uBA7y": {
+   "name": "DSD_G45CCT_4-5WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1L24orNid5": {
+   "name": "DSD_C35CCT_4-5WE14_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1nZ0e1RKZB": {
+   "name": "DSD_C35CCT_4-5WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a193rWlyorW": {
+   "name": "灯丝灯_G125CCT_6WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a11N9xdUeZu": {
+   "name": "灯丝灯_G95CCT_6WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1cAlH9QnUQ": {
+   "name": "灯丝灯_G80CCT_6WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a18BZQsErTH": {
+   "name": "灯丝灯_ST64CCT_6WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1lhKSFjsiC": {
+   "name": "灯丝灯_A60CCT_6WE27_AH001_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1XuF3OWaeT": {
+   "name": "led_strip_RGB_ITON_SZ016_WB02",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a19mFCJA9Da": {
+   "name": "Lighting_RGBCCT_ZY_Bm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Q0emVGjyw": {
+   "name": "led_strip_RGB_ITON_SZ016WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1Uf2WBuJID": {
+   "name": "led_strip_RGBCCT_ITON_SZ016WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1CuHgtZg6v": {
+   "name": "智能筒灯_RGBCCT_9W_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1yj48oiPGe": {
+   "name": "MESH网关_ZY_WBm",
+   "comm_mode": "WiFi",
+   "category": "Gateway",
+   "device_type": "Appliances"
+  },
+  "a1Bo8udkzkt": {
+   "name": "STRIP_RGBCCT_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1b6sAxJyG4": {
+   "name": "智能筒灯_RGBCCT_15W_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1OgoyCd90r": {
+   "name": "A60_RGBW_E27_5W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ypXQMAOT1": {
+   "name": "YY010-小匠-空气炸锅",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a1998PSjNst": {
+   "name": "ST64_RGBCCT_E27_4-9W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1pkDU3aHFT": {
+   "name": "MESH网关_HT_ZY_WBm",
+   "comm_mode": "WiFi",
+   "category": "Gateway",
+   "device_type": "Appliances"
+  },
+  "a1dc6oR4ru2": {
+   "name": "OH-250XA-13_小匠_艾伏_WB",
+   "comm_mode": "WiFi",
+   "category": "Oil-filledRadiator",
+   "device_type": "Appliances"
+  },
+  "a164QzMJQ7O": {
+   "name": "LED_A65_RGBCCT_E27_14W_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1P0RLGa48w": {
+   "name": "LED_G45_RGBCCT_E14_4-9W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1AGTUpAz9V": {
+   "name": "C37_RGBCCT_4-9W_YZ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1T4QWaKLnB": {
+   "name": "GU10_RGBCCT_6-5W_MN_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1qdE0mvCgf": {
+   "name": "GU10_RGBCCT_4-9W_YZ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1IiEh1NqO3": {
+   "name": "GU10_CCT_6W_YZ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1b6q61IuUP": {
+   "name": "LED_G45_RGBCCT_E27_6-5W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1tsZVqioaJ": {
+   "name": "LED_G45_RGBCCT_E14_6-5W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Uh5uGjkPg": {
+   "name": "LED_C37_RGBCCT_E27_6-5W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ABCWOEzqM": {
+   "name": "LED_C37_RGBCCT_E14_6-5W_ZY",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1clNWk3R5w": {
+   "name": "A60_RGBCCT_9W_YZ_ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1TecLhi95Q": {
+   "name": "ST64RGBW_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a17FDabkSLO": {
+   "name": "一转一转换头-15A-110V-ZY_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1xEttfYqF2": {
+   "name": "喂食机",
+   "comm_mode": "WiFi",
+   "category": "Feeder",
+   "device_type": "Pet"
+  },
+  "a1gXYRlwYgQ": {
+   "name": "A60_RGBCCT_9W_待定_ITON_WBm",
+   "comm_mode": "BLE Mesh",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1hx4Y3dQli": {
+   "name": "led_strip_RGBIC_SZ016_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1aRUdCC4EA": {
+   "name": "led_strip_RGBCCT_ITON_SZ016_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1uLejt3NbK": {
+   "name": "led_strip_RGBW_ITON_SZ016_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a10b79GCyA0": {
+   "name": "led_strip_RGB_ITON_SZ016_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1VPV9361Ei": {
+   "name": "led_strip_CCT_ITON_SZ016_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a168sfzXZCL": {
+   "name": "12W筒灯",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1hWejZ4wvt": {
+   "name": "吸顶灯RGBCCT_45W_SZ010_WB-001",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1KLSojq8Np": {
+   "name": "吸顶灯RGBCCT_36W_SZ010_WB-001",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1oLcSMlzo3": {
+   "name": "A60RGBCCT_E279W_ITON_JH003WBt",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1al2OgbvMo": {
+   "name": "灯带RGBW_待定_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1ryHDD3ayE": {
+   "name": "G45_RGBCCT_E14_6-5W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1gBexgOIRN": {
+   "name": "吸顶灯_CCT_40W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1eJkAeO26N": {
+   "name": "面板灯_RGBCCT_32W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "PanelLight",
+   "device_type": "Lighting"
+  },
+  "a1ch1wOQZ5Z": {
+   "name": "LED_GU10_CCT_6W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1qW7ZRxoOV": {
+   "name": "G45_RGBCCT_E27_6-5W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1YHDpDciRu": {
+   "name": "C37_RGBCCT_E27_6-5W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1GCMQxNAoC": {
+   "name": "C37_RGBCCT_E14_6-5W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a136LkYKnhn": {
+   "name": "G45_RGBCCT_E27_4-9W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1YCpkPQndM": {
+   "name": "G45_RGBCCT_E14_4-9W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1VI3t0IKpj": {
+   "name": "C37_RGBCCT_E27_4-9W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1afcgOtFUa": {
+   "name": "C37_RGBCCT_E14_4-9W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1m4NT0oqs5": {
+   "name": "A60_RGBCCT_E27_15W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1WkL456vVK": {
+   "name": "A65_RGBCCT_E27_14W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a18jtbQN0Dq": {
+   "name": "LED_GU10_CCT_5W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1nySXDECa9": {
+   "name": "LED_A60_RGBCCT_E27_9W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Lg2zzyNfb": {
+   "name": "BACK-LIT_PANEL_CCT32W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1o0uUgzZ6G": {
+   "name": "LED_PANEL_CCT_32W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1188VrAz9Y": {
+   "name": "吸顶灯_CCT_18W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a13OwHet5ga": {
+   "name": "吸顶_RGBCCT_18W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1rb72Y946R": {
+   "name": "LED_A60_RGBCCT_E27_9W_SX008_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1cVdlO5s6g": {
+   "name": "除湿机_ITON_NB051_O",
+   "comm_mode": "WiFi",
+   "category": "Dehumidifier",
+   "device_type": "Appliances"
+  },
+  "a17L7d2BTkh": {
+   "name": "ComboLightinging-CU10-RGBCW-7W",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1KYVbmA8f3": {
+   "name": "ComboLightinging-GU10-RGBCW-5W",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1pyhcTCrvH": {
+   "name": "GU10_RGBCCT_7W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1kGyZfA7ir": {
+   "name": "GU10_RGBCCT_5W_NB039_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1291gEM74W": {
+   "name": "筒灯_CCT_24W_SHENZHEN010_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1I3WWZM7ff": {
+   "name": "拓邦扫地机",
+   "comm_mode": "WiFi",
+   "category": "SweepingMachine",
+   "device_type": "Appliances"
+  },
+  "a1dyw6LufdV": {
+   "name": "G95RGBCCT_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a18xUhDsH3m": {
+   "name": "ST64RGBCCT_4-9WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1HyhQSTFWp": {
+   "name": "DSD_G45CCT_4-5WE14_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a17J8kdK3tZ": {
+   "name": "DSD_G45CCT_4-5WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1FoszGLMbC": {
+   "name": "DSD_C35CCT_4-5WE14_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a12YyDv9ffP": {
+   "name": "DSD_C35CCT_4-5WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1jypPZ7OjO": {
+   "name": "嘉乐蒸汽炸锅",
+   "comm_mode": "WiFi",
+   "category": "SteamFryer",
+   "device_type": "Appliances"
+  },
+  "a1iHNbCCOOT": {
+   "name": "移动空调7000Btu_XJ_NB051_O",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1eZqPahVMe": {
+   "name": "移动空调9000Btu_XJ_NB051_O",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1Hyz4Pi7DQ": {
+   "name": "移动空调12000Btu_XJ_NB051_O",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1L3KYDm8Y3": {
+   "name": "高压灯带RGB_SZ010-R_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1hck9sgztL": {
+   "name": "一转一法式转换器_10A_NB003_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a105r8ejhTb": {
+   "name": "灯带RGBCCT",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a12G4cYwQK4": {
+   "name": "灯带RGB_待定_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1X2Wu7Dr4Z": {
+   "name": "灯带CCT",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a10Q0reFrTh": {
+   "name": "德式四位排插_16A_待定_WB",
+   "comm_mode": "WiFi",
+   "category": "PowerStrip",
+   "device_type": "Electrician"
+  },
+  "a1qKwGwOfPu": {
+   "name": "德式三位排插_16A_待定_WB",
+   "comm_mode": "WiFi",
+   "category": "PowerStrip",
+   "device_type": "Electrician"
+  },
+  "a1x7VCPtDKP": {
+   "name": "Heater_UK_CX014",
+   "comm_mode": "WiFi",
+   "category": "Heater",
+   "device_type": "Appliances"
+  },
+  "a1KOC3PU6j5": {
+   "name": "Heater_USA_CX014",
+   "comm_mode": "WiFi",
+   "category": "Heater",
+   "device_type": "Appliances"
+  },
+  "a1LZZWsqUIy": {
+   "name": "超薄吸顶灯_RGBCCT_19W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1xqDy6G3e4": {
+   "name": "分腔体顶灯_RGBCCT_45W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "Compartmentalized lamp",
+   "device_type": "Lighting"
+  },
+  "a1uPNkH6d7e": {
+   "name": "分腔体顶灯_RGBCCT_36W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "Compartmentalized lamp",
+   "device_type": "Lighting"
+  },
+  "a14Gga9K1e1": {
+   "name": "分腔体顶灯_RGBCCT_24W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "Compartmentalized lamp",
+   "device_type": "Lighting"
+  },
+  "a1rAeBvk5Nq": {
+   "name": "吸顶灯_CCT_40W_DG003_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1jrfeturBh": {
+   "name": "吸顶灯_RGBCCT_40W_DG003_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1tkw3YrTG0": {
+   "name": "吸顶灯_CCT_24W_DG003_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1spyxYrIfl": {
+   "name": "吸顶灯_RGBCCT_24W_DG003_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1JYz839u8I": {
+   "name": "吸顶灯_CCT_18W_DG003_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1cvYL2S5ig": {
+   "name": "吸顶灯_RGBCCT_18W_DG003_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1asE8cJvai": {
+   "name": "Strip_RGBCCT_30W_10M_DG004",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1fD1bH6NQm": {
+   "name": "Strip_RGBCCT_20W_5M_DG004",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1Buk33hP43": {
+   "name": "ComboLightinging-C37",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1I8LSeA0gc": {
+   "name": "ComboLightinging-GU10",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1q1SeAwrdk": {
+   "name": "ComboLightinging-A60",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1mQUnUgW0U": {
+   "name": "格来德水壶",
+   "comm_mode": "WiFi",
+   "category": "Kettle",
+   "device_type": "Appliances"
+  },
+  "a14D4ONYKYK": {
+   "name": "嘉乐智能蒸汽空气炸锅",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a1an5yf5rpx": {
+   "name": "二位开关2GANG1WAY_NB023_C",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a14CHIgsj9g": {
+   "name": "一位开关1GANG1WAY_NB023_C",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1nvFKzrOWM": {
+   "name": "灯丝灯_A_G25CCT7WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1PNwn4LGeF": {
+   "name": "灯丝灯_A_G95CCT7WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1IRG7fgV3i": {
+   "name": "灯丝灯_A_G80CCT7WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1UOBElPRJC": {
+   "name": "灯丝灯_A_ST64CCT7WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a11u7ryrCLE": {
+   "name": "灯丝灯_A_A60CCT7WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1R3aCKtGpp": {
+   "name": "小圆壁灯_LED_CCT_12W_WZ012",
+   "comm_mode": "WiFi",
+   "category": "WallLamp",
+   "device_type": "Lighting"
+  },
+  "a1ekxlRd6NN": {
+   "name": "小圆吊灯_LED_CCT_12W_WZ012",
+   "comm_mode": "WiFi",
+   "category": "Chandelier",
+   "device_type": "Lighting"
+  },
+  "a1gCgeNUITV": {
+   "name": "螺旋管吊灯_LED_CCT_16W_WZ012",
+   "comm_mode": "WiFi",
+   "category": "Chandelier",
+   "device_type": "Lighting"
+  },
+  "a1QR9OT4y3W": {
+   "name": "单环吊灯_LED_CCT_24W_WZ012",
+   "comm_mode": "WiFi",
+   "category": "Chandelier",
+   "device_type": "Lighting"
+  },
+  "a1AJooKxeee": {
+   "name": "Down_lamp_CCT_24W_ZS015",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a17kOqj4AKj": {
+   "name": "Down_lamp_CCT_18W_ZS015",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1a67mINbA5": {
+   "name": "Driver_CCT_60W_JX001",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1hND4sUs3O": {
+   "name": "Driver_CCT_40W_JX001",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1M2NwG7UFm": {
+   "name": "Down_lamp_CCT_15W_ZS015",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1RIrPn9X42": {
+   "name": "吸顶灯_RGBCCT_24W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1bC9eVjD30": {
+   "name": "BackLit_PANEL_RGBCCT_32W_JX001",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1p7kTFDUED": {
+   "name": "二位意式开关_AVPLANA_10A_QZ002",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1OmmMqHO0l": {
+   "name": "二位意式开关_ABMATIX_10A_FS010",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1vsYHue3ZJ": {
+   "name": "一位意式开关_AVP_10A_QZ002",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1dW3hqXH6C": {
+   "name": "一位意式开关_ABMATIX_10A_FS010",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1tMyb8yUnQ": {
+   "name": "德意式插座_AVP_16A_QZ002",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a1zk4zeRBGo": {
+   "name": "一位德意式插座_ABM_16A_FS010",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a12hbu2VALi": {
+   "name": "天喜空气烤箱",
+   "comm_mode": "WiFi",
+   "category": "Oven",
+   "device_type": "Appliances"
+  },
+  "a1UAdFwSs0p": {
+   "name": "Heater_VDE_CX014",
+   "comm_mode": "WiFi",
+   "category": "Heater",
+   "device_type": "Appliances"
+  },
+  "a1AkOoT2XC5": {
+   "name": "Strip_RGBCCT_20W_2M_DG004",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1nPISoT3Gl": {
+   "name": "空气炸锅CKZ2-1913W",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a1MqCSrWaTc": {
+   "name": "空气炸锅CKZ1-1913W",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a1mGyYMypZv": {
+   "name": "GU10_CCT_5W_ITON_JH003_WB",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1teZMlSS4r": {
+   "name": "A60RGBCCT_E279W_ITON_JH003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1X0vTTGrJ0": {
+   "name": "德式一位欧式墙壁调光开关",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1slOe4L0VZ": {
+   "name": "LED_PANEL_RGBCCT_32W_JX001",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1dbKXwqhHL": {
+   "name": "C37-E27-5W_combo",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1ukTxdn8Mc": {
+   "name": "A65RGBCCT_E2714W_ITON_JH003_WB",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1oFo0faNu4": {
+   "name": "筒灯_CCT_6W_SHENZHEN010_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a18FZETuUKW": {
+   "name": "筒灯_CCT_12W_SHENZHEN010_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1ZryTOyKNi": {
+   "name": "筒灯_CCT_18W_SHENZHEN010_WB",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1qVyzwH4hZ": {
+   "name": "1位通断器_10A_QZ002_WB",
+   "comm_mode": "WiFi",
+   "category": "CircuitBreaker",
+   "device_type": "Electrician"
+  },
+  "a1ByMmGdolj": {
+   "name": "2位通断器_10A_QZ002_WB",
+   "comm_mode": "WiFi",
+   "category": "CircuitBreaker",
+   "device_type": "Electrician"
+  },
+  "a1T8H2sCrLK": {
+   "name": "灯丝灯_G125CCT_WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1SOXQNrSUg": {
+   "name": "灯丝灯_G80CCT_6WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1gRg58FW1e": {
+   "name": "灯丝灯_ST64CCT_6WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1GGnyln558": {
+   "name": "灯丝灯_A60CCT_6WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a1cflfeHrL0": {
+   "name": "灯丝灯_G95CCT_6WE27_XM003_WB",
+   "comm_mode": "WiFi",
+   "category": "FilamentLamp",
+   "device_type": "Lighting"
+  },
+  "a16FSzbAXez": {
+   "name": "Down_lamp_CCT_9W_ZS015",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a108BEKKn2r": {
+   "name": "Driver_CCT_24W_JX001",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1GJGPcugNc": {
+   "name": "Strip_RGBCCT_20W_2_1M_DG004",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a18sjcSpW56": {
+   "name": "吸顶灯_RGBCCT_40W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1siwjFrX3q": {
+   "name": "RGBCW_Strip_1M",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1ZgKrrFntP": {
+   "name": "5米低压灯带_RGBW_24W_SZ013_WB",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1qLWStjUL6": {
+   "name": "A60_E27_9W_SM2135E_combo",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1JLh3bugzM": {
+   "name": "意式Wi-Fi插座二位开关",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1dDVJwPZDX": {
+   "name": "一位德意式插座_ABLL_16A_FS010",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a1H3bbW0zgr": {
+   "name": "一位意式开关_ABLL_10A_FS010",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a12uqLYEYZV": {
+   "name": "C37-E27-7W_combo",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1GFEAIGx3y": {
+   "name": "1转1德式转换器_10A_NB003_WB",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1OfBPI7xcu": {
+   "name": "双环吊灯_LED_CCT_36W_WZ012",
+   "comm_mode": "WiFi",
+   "category": "Chandelier",
+   "device_type": "Lighting"
+  },
+  "a1cd4JEIaJ1": {
+   "name": "吸顶灯_CCT_24W_JX001_WB",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1RbJpZg7f0": {
+   "name": "德式插座_16A_待定",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a12gagaFLip": {
+   "name": "4位意式插座",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a15qW19nmZn": {
+   "name": "A60_RGBCCT_E27_15W_combo",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1oHKM0otp6": {
+   "name": "LED_A60_RGBCCT_E27_15W_combo",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1CtI36N5tF": {
+   "name": "智能移动空调10000Btu_NB051",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1YsshEGslR": {
+   "name": "4位德式插座_16A_HZ009",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a1G32IN3xJd": {
+   "name": "4位法式排插_16A_HZ009",
+   "comm_mode": "WiFi",
+   "category": "PowerStrip",
+   "device_type": "Electrician"
+  },
+  "a12kRApjej3": {
+   "name": "LED_A60_RGBCCT_E27_9W_combo",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1uAEklsB4N": {
+   "name": "吸顶灯_RGBCCT_18W_combo",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1REZN3VkPm": {
+   "name": "Strip_RGBCCT_20W_2M_DG004_郭",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1icTBlt6e6": {
+   "name": "二位意式开关_ABLL_10A_FS010",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1wHV45ynB6": {
+   "name": "日煌地扇",
+   "comm_mode": "WiFi",
+   "category": "Fan",
+   "device_type": "Appliances"
+  },
+  "a1rU5lf9Qei": {
+   "name": "彩光灯带",
+   "comm_mode": "WiFi",
+   "category": "StripLight",
+   "device_type": "Lighting"
+  },
+  "a1LXxlBiws6": {
+   "name": "空气炸锅CKZ-1913W",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a1mbM59xmkC": {
+   "name": "智能冷风扇_CX014",
+   "comm_mode": "WiFi",
+   "category": "Fan",
+   "device_type": "Appliances"
+  },
+  "a1RQjMZKRp4": {
+   "name": "LED_G45_RGBCCT_E27_5W_HZ005_1",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ODFmQsXI6": {
+   "name": "LED_C37_RGBCCT_E14_5W_HZ005_1",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1AsKqWZWFU": {
+   "name": "LED_A60_RGBCCT_E27_9W_JH003_1",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1UFGjqlZZ6": {
+   "name": "LED_A65_RGBCCT_E27_14W_JH003_1",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1brKxHp2cR": {
+   "name": "LED_GU10_CCT_5W_JH003_1",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1PLthg78dQ": {
+   "name": "空气炸锅",
+   "comm_mode": "WiFi",
+   "category": "Airfryer",
+   "device_type": "Appliances"
+  },
+  "a14Xm8mqnXd": {
+   "name": "智能移动空调9000Btu_NB051",
+   "comm_mode": "WiFi",
+   "category": "AirConditioner",
+   "device_type": "Appliances"
+  },
+  "a1WR5KYlXyg": {
+   "name": "意式P17P11智能排插",
+   "comm_mode": "WiFi",
+   "category": "PowerStrip",
+   "device_type": "Electrician"
+  },
+  "a1ZLC8UDwRM": {
+   "name": "LED_A65_RGBCCT_E27_14W_JH003",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a19lOFZnfUA": {
+   "name": "LED_A60_RGBCCT_E27_15W_JH003",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1lT1BUssGI": {
+   "name": "LED_A60_RGBCCT_E27_15W_NB011",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ZuYSB27qw": {
+   "name": "LED_A60_RGBCCT_E27_9W_NB011",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1ltmxqjQ9l": {
+   "name": "LED_GU10_CCT_5W_JH003",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a11rCO00agk": {
+   "name": "LED_G45_RGBCCT_E27_5W_JH003",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1bQorVKkeT": {
+   "name": "LED_C37_RGBCCT_E27_5W_JH003",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1BMm5WgPvH": {
+   "name": "LED_A60_RGBCCT_E27_9W_JH003",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1IZJG72Z9l": {
+   "name": "LED_A60_RGBCCT_E27_15W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1VOo1CN3Qt": {
+   "name": "二位开关2GANG1WAY_NB023",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1S0FePiFEA": {
+   "name": "一位开关1GANG1WAY_NB023",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1cG4TiY7FL": {
+   "name": "吸顶灯_RGBCCT_18W_DG003",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1FRNaeWQkp": {
+   "name": "吸顶灯_CCT_18W_DG003",
+   "comm_mode": "WiFi",
+   "category": "CeilingLight",
+   "device_type": "Lighting"
+  },
+  "a1gX3g5TjVQ": {
+   "name": "LED_PANEL_CCT_32W_JX001",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1mevewbgC3": {
+   "name": "BACK-LIT_PANEL_CCT_32W_JX001",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1syabLtqke": {
+   "name": "可调角度筒灯_CCT_5W_NB011",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1SiJiTnKCV": {
+   "name": "筒灯_CCT_18W_SHENZHEN010",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1T5iLpT5jt": {
+   "name": "筒灯_Lighting_CCT_12W_SHENZHEN010",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a165KafY8ic": {
+   "name": "筒灯_CCT_6W_SHENZHEN010",
+   "comm_mode": "WiFi",
+   "category": "DownLighting",
+   "device_type": "Lighting"
+  },
+  "a1bBK47w4BF": {
+   "name": "LED_T4_4U_CCT_15W_NB011",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1z0qgJpyrt": {
+   "name": "LED_GU10_CCT_7W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "Lamp",
+   "device_type": "Lighting"
+  },
+  "a1z1yDrLtRj": {
+   "name": "LED_GU10_CCT_5W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a141QfbNuJs": {
+   "name": "LED_G45_RGBCCT_E27_7W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1GHEs25mKR": {
+   "name": "LED_G45_RGBCCT_E14_7W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1EuowKj7yr": {
+   "name": "LED_C37_RGBCCT_E27_7W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1kVLXS6CN1": {
+   "name": "LED_C37_RGBCCT_E14_7W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1IXbR60daR": {
+   "name": "LED_G45_RGBCCT_E27_5W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a19ewy8cVYp": {
+   "name": "LED_G45_RGBCCT_E14_5W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1gguHhEeVc": {
+   "name": "LED_C37_RGBCCT_E27_5W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a16sbNEkPAp": {
+   "name": "LED_C37_RGBCCT_E14_5W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1Gka7aDRoD": {
+   "name": "LED_A60_RGBCCT_E27_9W_HZ005",
+   "comm_mode": "WiFi",
+   "category": "RGBLamp",
+   "device_type": "Lighting"
+  },
+  "a1yTtBbTupP": {
+   "name": "插座_16A_250V_NB038",
+   "comm_mode": "WiFi",
+   "category": "Socket",
+   "device_type": "Electrician"
+  },
+  "a128rToRmzB": {
+   "name": "一转一转换头_16A_250V_NB038",
+   "comm_mode": "WiFi",
+   "category": "Converter",
+   "device_type": "Electrician"
+  },
+  "a1QenclMKnU": {
+   "name": "二位开关KS-601-2_SHENZHEN014",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1VjRvS21ym": {
+   "name": "一位开关KS-601_SHENZHEN014",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a24KpK8KTKb": {
+   "name": "模版@二位开关",
+   "comm_mode": "WiFi",
+   "category": "Switch",
+   "device_type": "Electrician"
+  },
+  "a1C9Fk2pBzz": {
+   "name": "云彩太阳能智能吊灯_500mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1gqjkuvywV": {
+   "name": "云彩太阳能智能地坪灯_500mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1OkdxvL86E": {
+   "name": "云彩太阳能智能吊灯_300mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1Eitw1p82x": {
+   "name": "云彩太阳能智能地坪灯_300mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a12Q1kdMthA": {
+   "name": "云彩太阳能智能吊灯_200mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1p0b5Esmk4": {
+   "name": "云彩太阳能智能壁灯_200mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1wmu1AUfUc": {
+   "name": "云彩太阳能智能地插灯_200mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1MQa5pItRz": {
+   "name": "云彩太阳能智能吊灯_150mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1jaA2YBTd5": {
+   "name": "云彩太阳能智能壁灯_150mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1D3HtSagiB": {
+   "name": "云彩太阳能智能地插灯_150mm_zy",
+   "comm_mode": "BLE Mesh",
+   "category": "CloudLamp",
+   "device_type": "Lighting"
+  },
+  "a1Nh5eEjW3f": {
+   "name": "摇头机",
+   "comm_mode": " 已发布",
+   "category": "Camera",
+   "device_type": "Security"
+  },
+  "a1xc3CRY6hd": {
+   "name": "摄像头_照明_看护台灯",
+   "comm_mode": " 已发布",
+   "category": "CareTableLamp",
+   "device_type": "Security"
+  },
+  "a1Q4OXAOQgy": {
+   "name": "户外枪机_SZ020",
+   "comm_mode": " 已发布",
+   "category": "Camera",
+   "device_type": "Security"
+  },
+  "a1D8VRekHCC": {
+   "name": "球机_SZ020",
+   "comm_mode": " 已发布",
+   "category": "Camera",
+   "device_type": "Security"
+  },
+  "a1Uo5X7ZFH3": {
+   "name": "室内智能摄像头_ZY_W",
+   "comm_mode": " 已发布",
+   "category": "Camera",
+   "device_type": "Security"
+  }
+ },
+ "categories": {
+  "CurtainSwitch": 2,
+  "Heater": 5,
+  "WaterDispenser": 2,
+  "AirConditioner": 12,
+  "StringOfLights": 1,
+  "TowerFan": 1,
+  "Lamp": 55,
+  "CatLitter": 4,
+  "MeteredSocket": 4,
+  "Socket": 10,
+  "Sensor": 2,
+  "RGBLamp": 116,
+  "CloudLamp": 25,
+  "Airpurifier": 1,
+  "WallLamp": 4,
+  "Spotlight": 3,
+  "DryingOven": 1,
+  "PetThermostat": 1,
+  "CatBed": 1,
+  "Airfryer": 7,
+  "WaterproofOutlet": 1,
+  "SocketTableLamp": 1,
+  "Aquarium": 1,
+  "Feeder": 4,
+  "Kettle": 2,
+  "CircuitBreaker": 5,
+  "Switch": 23,
+  "DownLighting": 36,
+  "MiningLamp": 5,
+  "FloodLight": 3,
+  "CeilingLight": 51,
+  "Converter": 11,
+  "FanLighting": 6,
+  "Dimming_panel": 2,
+  "StripLight": 23,
+  "Humidifier": 2,
+  "SolarLamp": 1,
+  "PurifyingLamp": 8,
+  "SmartDeskLamp": 1,
+  "SmartWallLamp": 2,
+  "PanelLight": 9,
+  "FilamentLamp": 18,
+  "SweepingMachine": 2,
+  "Gateway": 2,
+  "Oil-filledRadiator": 1,
+  "Dehumidifier": 1,
+  "SteamFryer": 1,
+  "PowerStrip": 4,
+  "Compartmentalized lamp": 3,
+  "Chandelier": 4,
+  "Oven": 1,
+  "Fan": 2,
+  "Camera": 4,
+  "CareTableLamp": 1
+ }
+}
