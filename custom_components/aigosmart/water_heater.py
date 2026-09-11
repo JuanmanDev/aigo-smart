@@ -31,7 +31,6 @@ from .const import (
     PROP_KETTLE_SWITCH,
     PROP_KETTLE_TARGET,
     PROP_KETTLE_TEMP,
-    STATUS_ONLINE,
 )
 from .coordinator import AigoDataUpdateCoordinator
 from .helpers import is_kettle_device
@@ -80,9 +79,14 @@ class AigoSmartKettle(CoordinatorEntity, WaterHeaterEntity):
         self._current = None
         self._target = 100
         self._on = False
-        self._attr_available = dev.get("status") == STATUS_ONLINE
+        self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
+
+    @property
+    def available(self) -> bool:
+        # Per-device offline state AND coordinator health (expired session)
+        return self._available and self.coordinator.last_update_success
 
     @property
     def current_temperature(self) -> float | None:
@@ -103,10 +107,7 @@ class AigoSmartKettle(CoordinatorEntity, WaterHeaterEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         props = self._coordinator.props.get(self._iot_id, {})
-        for d in self._coordinator.devices:
-            if d.get("iotId") == self._iot_id:
-                self._attr_available = d.get("status") == STATUS_ONLINE
-                break
+        self._available = self._coordinator.is_device_online(self._iot_id)
         if props and not (self._commander and self._commander.in_skip()):
             self._apply(props)
         self.async_write_ha_state()
@@ -131,6 +132,21 @@ class AigoSmartKettle(CoordinatorEntity, WaterHeaterEntity):
         if PROP_KETTLE_SWITCH in props:
             self._on = bool(int(props[PROP_KETTLE_SWITCH]))
 
+    async def _send(self, items: dict, prev: bool) -> None:
+        if self._commander is not None:
+            await self._commander.async_send(items)
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, items,
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart kettle command failed for %s: %s",
+                                self._iot_id, exc)
+                self._on = prev
+                self.async_write_ha_state()
+
     async def async_set_temperature(self, **kwargs: Any) -> None:
         if ATTR_TEMPERATURE in kwargs:
             self._target = float(kwargs[ATTR_TEMPERATURE])
@@ -139,16 +155,16 @@ class AigoSmartKettle(CoordinatorEntity, WaterHeaterEntity):
                 await self._commander.async_send({PROP_KETTLE_TARGET: int(self._target)})
 
     async def async_turn_on(self, **kwargs: Any) -> None:
+        prev = self._on
         self._on = True
         self.async_write_ha_state()
-        if self._commander is not None:
-            await self._commander.async_send({PROP_KETTLE_SWITCH: 1})
+        await self._send({PROP_KETTLE_SWITCH: 1}, prev)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        prev = self._on
         self._on = False
         self.async_write_ha_state()
-        if self._commander is not None:
-            await self._commander.async_send({PROP_KETTLE_SWITCH: 0})
+        await self._send({PROP_KETTLE_SWITCH: 0}, prev)
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""

@@ -95,8 +95,14 @@ class AigoSmartClimate(CoordinatorEntity, ClimateEntity):
         self._hvac_mode = HVACMode.OFF
         self._current_temp = None
         self._target_temp = 24
+        self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
+
+    @property
+    def available(self) -> bool:
+        # Per-device offline state AND coordinator health (expired session)
+        return self._available and self.coordinator.last_update_success
 
     @property
     def current_temperature(self):
@@ -113,10 +119,7 @@ class AigoSmartClimate(CoordinatorEntity, ClimateEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         props = self._coordinator.props.get(self._iot_id, {})
-        for d in self._coordinator.devices:
-            if d.get("iotId") == self._iot_id:
-                self._attr_available = d.get("status") == 1
-                break
+        self._available = self._coordinator.is_device_online(self._iot_id)
         if props and not (self._commander and self._commander.in_skip()):
             self._apply(props)
         self.async_write_ha_state()
@@ -154,6 +157,15 @@ class AigoSmartClimate(CoordinatorEntity, ClimateEntity):
             self.async_write_ha_state()
             if self._commander is not None:
                 await self._commander.async_send(items)
+            else:
+                try:
+                    await self.hass.async_add_executor_job(
+                        self._coordinator.client.set_properties,
+                        self._iot_id, items,
+                    )
+                except Exception as exc:
+                    _LOGGER.warning("AigoSmart set_temperature failed for %s: %s",
+                                    self._iot_id, exc)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         power = 0 if hvac_mode == HVACMode.OFF else 1
@@ -161,6 +173,16 @@ class AigoSmartClimate(CoordinatorEntity, ClimateEntity):
         self.async_write_ha_state()
         if self._commander is not None:
             await self._commander.async_send({PROP_POWER: power})
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {PROP_POWER: power},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart set_hvac_mode failed for %s: %s",
+                                self._iot_id, exc)
+                self._coordinator.mark_device_offline(self._iot_id)
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""

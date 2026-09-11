@@ -103,7 +103,7 @@ Content-MD5 = base64(MD5(body)).
 | `/thing/properties/set` | 1.0.0 | write TSL properties |
 | `/thing/service/invoke` | 1.0.0 | invoke TSL service |
 | `/thing/tsl/get` | 1.0.0 | full TSL (data model) |
-| `/thing/status/get` | 1.0.0 | online status |
+| `/thing/status/get` | 1.0.5 | online status — response `data.status` (1=online, 3=offline), `data.time` (ms). Used by the app's PanelDevice.getStatus; **do not trust `listBindingByAccount.status` for availability** — an online device can report `status: 3` there (verified on a live EU account), so ambiguous values must be confirmed with this API. |
 | `/thing/extended/property/get` / `/thing/extended/property/set` | 1.0.2 | extended props |
 | `/thing/deviceinfo/update`, `/thing/deviceinfo/update_reply` | — | device info |
 | `/thing/productInfo/getByAppKey`, `/thing/productInfo/queryProductKey` | — | product info |

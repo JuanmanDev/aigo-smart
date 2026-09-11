@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .commander import get_commander
-from .const import DOMAIN, PROP_FAN_BUZZER, STATUS_ONLINE
+from .const import DOMAIN, PROP_FAN_BUZZER
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry, platform_for_device
 from .helpers import is_fan_device
@@ -81,15 +81,20 @@ class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
             model=dev.get("productName") or dev.get("productKey") or "smart plug",
         )
         self._is_on = False
-        # Alibaba IoT status: 0=NOT_ACTIVATED, 1=ONLINE, 3=OFFLINE, 8=DISABLED
-        self._available = dev.get("status") == 1
+        # Online state resolved by the coordinator (listBinding status is
+        # unreliable — verified via /thing/status/get when ambiguous)
+        self._available = coordinator.is_device_online(self._iot_id)
         self._prop = PROP_SWITCH
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
 
     @property
     def available(self) -> bool:
-        return self._available
+        # Unavailable when the coordinator is failing (expired session) OR
+        # the device itself is offline. CoordinatorEntity's default `available`
+        # only tracks coordinator success, so per-device state needs this
+        # explicit override.
+        return self._available and self.coordinator.last_update_success
 
     @property
     def is_on(self) -> bool:
@@ -98,11 +103,8 @@ class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         props = self._coordinator.props.get(self._iot_id, {})
-        for d in self._coordinator.devices:
-            if d.get("iotId") == self._iot_id:
-                self._available = d.get("status") == 1
-                break
-        if props and self._available and not (
+        self._available = self._coordinator.is_device_online(self._iot_id)
+        if props and not (
             self._commander and self._commander.in_skip()
         ):
             self._apply(props)
@@ -120,16 +122,40 @@ class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
             self._is_on = bool(props[PROP_LIGHT_SWITCH])
 
     async def async_turn_on(self, **kwargs: Any) -> None:
+        prev = self._is_on
         self._is_on = True
         self.async_write_ha_state()
         if self._commander is not None:
             await self._commander.async_send({self._prop: 1})
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {self._prop: 1},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart switch turn_on failed for %s: %s",
+                                 self._iot_id, exc)
+                self._is_on = prev
+                self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        prev = self._is_on
         self._is_on = False
         self.async_write_ha_state()
         if self._commander is not None:
             await self._commander.async_send({self._prop: 0})
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {self._prop: 0},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart switch turn_off failed for %s: %s",
+                                 self._iot_id, exc)
+                self._is_on = prev
+                self.async_write_ha_state()
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""
@@ -157,9 +183,13 @@ class AigoFanBuzzer(CoordinatorEntity, SwitchEntity):
             model=dev.get("productName") or "",
         )
         self._is_on = False
-        self._attr_available = dev.get("status") == STATUS_ONLINE
+        self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
+
+    @property
+    def available(self) -> bool:
+        return self._available and self.coordinator.last_update_success
 
     @property
     def is_on(self) -> bool:
@@ -168,6 +198,7 @@ class AigoFanBuzzer(CoordinatorEntity, SwitchEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         props = self._coordinator.props.get(self._iot_id, {})
+        self._available = self._coordinator.is_device_online(self._iot_id)
         if PROP_FAN_BUZZER in props:
             self._is_on = bool(int(props[PROP_FAN_BUZZER]))
         self.async_write_ha_state()
@@ -183,16 +214,40 @@ class AigoFanBuzzer(CoordinatorEntity, SwitchEntity):
                 )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
+        prev = self._is_on
         self._is_on = True
         self.async_write_ha_state()
         if self._commander is not None:
             await self._commander.async_send({PROP_FAN_BUZZER: 1})
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {PROP_FAN_BUZZER: 1},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart buzzer turn_on failed for %s: %s",
+                                 self._iot_id, exc)
+                self._is_on = prev
+                self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        prev = self._is_on
         self._is_on = False
         self.async_write_ha_state()
         if self._commander is not None:
             await self._commander.async_send({PROP_FAN_BUZZER: 0})
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {PROP_FAN_BUZZER: 0},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart buzzer turn_off failed for %s: %s",
+                                self._iot_id, exc)
+                self._is_on = prev
+                self.async_write_ha_state()
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""

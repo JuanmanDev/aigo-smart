@@ -397,7 +397,9 @@ class AigoCloudClient:
             api_ver="1.0.8",
             iot_token=self.ensure_token(),
         )
-        return result.get("data", {}).get("data", []) or []
+        data = result.get("data", {})
+        items = data.get("data", []) if isinstance(data, dict) else data
+        return items or []
 
     def get_device_by_id(self, iot_id: str) -> dict:
         result = self._call(
@@ -436,6 +438,7 @@ class AigoCloudClient:
         result = self._call(
             const.PATH_STATUS_GET,
             {"iotId": iot_id},
+            api_ver="1.0.5",
             iot_token=self.ensure_token(),
         )
         return result.get("data", {})

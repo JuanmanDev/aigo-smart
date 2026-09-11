@@ -28,4 +28,10 @@ jobs:
         run: |
           python -m unittest python_client.tests.test_unit \
                  python_client.tests.test_discovery \
-                 python_client.tests.test_ble -v
+                 python_client.tests.test_ble \
+                 python_client.tests.test_breeze \
+                 python_client.tests.test_color \
+                 python_client.tests.test_commander \
+                 python_client.tests.test_coordinator_cache \
+                 python_client.tests.test_light_state \
+                 python_client.tests.test_status -v

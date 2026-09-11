@@ -1,6 +1,9 @@
 {
   "domain": "aigosmart",
   "name": "AigoSmart (unofficial)",
+  "after_dependencies": [
+    "bluetooth"
+  ],
   "codeowners": [
     "@JuanmanDev"
   ],
@@ -13,8 +16,5 @@
   "requirements": [
     "cryptography>=41.0.0"
   ],
-  "after_dependencies": [
-    "bluetooth"
-  ],
-  "version": "0.4.0"
+  "version": "0.4.1"
 }

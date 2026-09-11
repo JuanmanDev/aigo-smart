@@ -36,7 +36,6 @@ from .const import (
     PROP_FAN_OSCILLATE,
     PROP_FAN_POWER,
     PROP_FAN_SPEED,
-    STATUS_ONLINE,
 )
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry, platform_for_device
@@ -108,9 +107,14 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
         self._speed = 1
         self._mode = 0
         self._oscillating = False
-        self._attr_available = dev.get("status") == STATUS_ONLINE
+        self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
+
+    @property
+    def available(self) -> bool:
+        # Per-device offline state AND coordinator health (expired session)
+        return self._available and self.coordinator.last_update_success
 
     @property
     def is_on(self) -> bool:
@@ -135,10 +139,7 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         props = self._coordinator.props.get(self._iot_id, {})
-        for d in self._coordinator.devices:
-            if d.get("iotId") == self._iot_id:
-                self._attr_available = d.get("status") == STATUS_ONLINE
-                break
+        self._available = self._coordinator.is_device_online(self._iot_id)
         if props and not (self._commander and self._commander.in_skip()):
             self._apply(props)
         self.async_write_ha_state()
@@ -169,6 +170,16 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
         self.async_write_ha_state()
         if self._commander is not None:
             await self._commander.async_send(items)
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, items,
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart fan command failed for %s: %s",
+                                self._iot_id, exc)
+                self._coordinator.mark_device_offline(self._iot_id)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         items: dict[str, Any] = {PROP_FAN_POWER: 1}

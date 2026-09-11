@@ -9,7 +9,7 @@ if (-not (Test-Connection -ComputerName $TargetHost -Count 1 -Quiet)) {
     exit 1
 }
 
-Write-Host "Copiando custom_components/aigosmart a $TargetHost:$RemotePath..." -ForegroundColor Cyan
+Write-Host "Copiando custom_components/aigosmart a ${TargetHost}:${RemotePath}..." -ForegroundColor Cyan
 scp -r -o BatchMode=yes -o StrictHostKeyChecking=no custom_components/aigosmart "root@${TargetHost}:${RemotePath}/"
 
 if ($LASTEXITCODE -ne 0) {

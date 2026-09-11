@@ -79,8 +79,18 @@ class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         self._value = value
         self.async_write_ha_state()
+        items = {PROP_FAN_TIMER: int(value)}
         if self._commander is not None:
-            await self._commander.async_send({PROP_FAN_TIMER: int(value)})
+            await self._commander.async_send(items)
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, items,
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart timer set failed for %s: %s",
+                                self._iot_id, exc)
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""

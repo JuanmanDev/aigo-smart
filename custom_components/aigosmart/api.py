@@ -19,6 +19,7 @@ class AigoSmartApiClient(LocalFirstMixin):
 
     def __init__(self, email: str, password: str, security_code: str = "",
                  iot_host: str = "eu-central-1.api-iot.aliyuncs.com") -> None:
+        super().__init__()  # initializes LocalFirstMixin's _local_ok/_local_bad
         self.email = email
         self.password = password
         self.security_code = security_code
@@ -39,6 +40,9 @@ class AigoSmartApiClient(LocalFirstMixin):
 
     def get_properties(self, iot_id: str) -> dict:
         return self._client.get_properties(iot_id)
+
+    def get_status(self, iot_id: str) -> dict:
+        return self._client.get_status(iot_id)
 
     def set_properties(self, iot_id: str, items: dict) -> dict:
         return self._client.set_properties(iot_id, items)

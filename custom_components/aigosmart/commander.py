@@ -12,6 +12,11 @@ Guarantees for the user: the entity always shows exactly what was last
 requested, and the device receives one clean write containing the final
 values — no out-of-order HTTP races (the old sync turn_on ran in the
 thread pool, so concurrent POSTs could arrive out of order).
+
+On terminal failure (MAX_ATTEMPTS exhausted) the commander:
+  * invokes the coordinator's mark_device_offline() so every entity of the
+    device flips to unavailable (no more silent optimistic state), and
+  * clears the optimistic property locks so the next poll reverts state.
 """
 from __future__ import annotations
 
@@ -31,10 +36,13 @@ MAX_ATTEMPTS = 3
 class AigoCommander:
     """One per entity. Merges rapid writes into ordered, verified flushes."""
 
-    def __init__(self, hass, client, iot_id: str) -> None:
+    def __init__(self, hass, client, iot_id: str,
+                 on_failure=None) -> None:
         self.hass = hass
         self._client = client
         self._iot_id = iot_id
+        # async callable() invoked once when a batch is terminally dropped
+        self._on_failure = on_failure
         self._pending: dict = {}
         self._attempts = 0
         self._lock = asyncio.Lock()
@@ -77,8 +85,13 @@ class AigoCommander:
                 items = self._pending
                 self._pending = {}
             try:
+                # Write via the CLOUD (not local ALCS): local CoAP writes are
+                # applied by the device but don't always reach the cloud
+                # shadow, which left the AigoSmart app (and our own polls)
+                # showing stale state. The cloud path both controls the
+                # device and updates the shadow everyone reads.
                 await self.hass.async_add_executor_job(
-                    self._client.set_properties_prefer_local, self._iot_id, items)
+                    self._client.set_properties, self._iot_id, items)
             except Exception as exc:
                 self._attempts += 1
                 _LOGGER.warning("AigoSmart write failed (%s/3) for %s: %s",
@@ -87,7 +100,8 @@ class AigoCommander:
                     _LOGGER.error("AigoSmart giving up on batch for %s: %s",
                                   self._iot_id, items)
                     self._attempts = 0
-                    continue
+                    await self._fail()
+                    return
                 async with self._lock:
                     self._pending.update(items)
                 await asyncio.sleep(DEBOUNCE * 4)
@@ -102,11 +116,20 @@ class AigoCommander:
             try:
                 await asyncio.sleep(SETTLE)
                 props = await self.hass.async_add_executor_job(
-                    self._client.get_properties_prefer_local, self._iot_id)
+                    self._client.get_properties, self._iot_id)
             except Exception:
                 continue
             if props and _matches(props, items):
                 self.skip_until = time.monotonic() + SKIP_AFTER_CONFIRM
+
+    async def _fail(self) -> None:
+        """Terminal write failure: revert optimistic state + mark offline."""
+        self.skip_until = 0.0
+        if self._on_failure is not None:
+            try:
+                await self._on_failure()
+            except Exception as exc:
+                _LOGGER.debug("AigoSmart on_failure callback failed: %s", exc)
 
 
 def _matches(props: dict, items: dict) -> bool:
@@ -140,5 +163,11 @@ def get_commander(state: dict, iot_id: str) -> AigoCommander:
     """Lazily create/fetch the shared commander for a device."""
     commanders = state.setdefault("commanders", {})
     if iot_id not in commanders:
-        commanders[iot_id] = AigoCommander(state["hass"], state["client"], iot_id)
+        coordinator = state["coordinator"]
+
+        async def _on_failure() -> None:
+            coordinator.mark_device_offline(iot_id)
+
+        commanders[iot_id] = AigoCommander(
+            state["hass"], state["client"], iot_id, on_failure=_on_failure)
     return commanders[iot_id]

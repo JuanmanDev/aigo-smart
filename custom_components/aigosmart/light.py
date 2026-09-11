@@ -51,7 +51,6 @@ from .const import (
     PROP_MESH_COLOR_TEMP,
     PROP_MESH_LIGHT_MODE,
     PROP_MESH_SWITCH,
-    STATUS_ONLINE,
 )
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry, platform_for_device
@@ -159,7 +158,7 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         self._brightness = 255
         self._color_temp_k = 3700
         self._hs = None
-        self._available = dev.get("status") == STATUS_ONLINE
+        self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(self._coordinator.props.get(self._iot_id, {}))
 
@@ -167,7 +166,9 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
 
     @property
     def available(self) -> bool:
-        return self._available
+        # Unavailable when the coordinator itself is failing (e.g. expired
+        # session → polls erroring for hours) OR the device is offline.
+        return self._available and self.coordinator.last_update_success
 
     @property
     def is_on(self) -> bool:
@@ -200,23 +201,18 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         props = self._coordinator.props.get(self._iot_id, {})
-        dev = self._dev_by_id()
-        if dev is not None:
-            self._available = dev.get("status") == STATUS_ONLINE
+        # Online state is resolved by the coordinator (verified via
+        # /thing/status/get when the list status is ambiguous) — not gated
+        # here anymore, since the listBinding status is unreliable.
+        self._available = self._coordinator.is_device_online(self._iot_id)
         # While a command is settling (or its shadow hasn't caught up), the
         # cloud can still return the OLD values — applying them here is what
         # made brightness/CCT "revert" during rapid changes. Skip instead.
-        if props and self._available and not (
+        if props and not (
             self._commander and self._commander.in_skip()
         ):
             self._apply(props)
         self.async_write_ha_state()
-
-    def _dev_by_id(self) -> dict | None:
-        for d in self._coordinator.devices:
-            if d.get("iotId") == self._iot_id:
-                return d
-        return None
 
     def _apply(self, props: dict) -> None:
         # switch (transport-specific first)
@@ -280,6 +276,8 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         items: dict[str, Any] = {self._prop_switch: 1}
+        # Save rollback state — restored if the write fails terminally
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
         self._is_on = True
 
         if ATTR_BRIGHTNESS in kwargs:
@@ -307,22 +305,41 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         # Optimistic state is already applied above; the commander serializes
         # rapid consecutive calls (slider moves) into one verified write.
         self.async_write_ha_state()
+        self._coordinator.async_set_optimistic_props(self._iot_id, items, hold_duration=12.0)
         if self._commander is not None:
             await self._commander.async_send(items)
         else:
-            await self.hass.async_add_executor_job(
-                self._coordinator.client.set_properties, self._iot_id, items
-            )
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties, self._iot_id, items
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart turn_on failed for %s: %s", self._iot_id, exc)
+                self._revert(prev)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
         self._is_on = False
         self.async_write_ha_state()
+        self._coordinator.async_set_optimistic_props(
+            self._iot_id, {self._prop_switch: 0}, hold_duration=12.0)
         if self._commander is not None:
             await self._commander.async_send({self._prop_switch: 0})
         else:
-            await self.hass.async_add_executor_job(
-                self._coordinator.client.set_properties, self._iot_id, {self._prop_switch: 0}
-            )
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {self._prop_switch: 0},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart turn_off failed for %s: %s", self._iot_id, exc)
+                self._revert(prev)
+
+    def _revert(self, prev: tuple) -> None:
+        """Restore pre-command state after a failed write."""
+        self._is_on, self._brightness, self._color_temp_k, self._hs = prev
+        self._coordinator.clear_optimistic_props(self._iot_id)
+        self.async_write_ha_state()
 
     async def async_will_remove_from_hass(self) -> None:
         if self._commander is not None:

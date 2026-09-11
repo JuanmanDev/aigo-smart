@@ -33,7 +33,7 @@ class FakeClient:
         self.fail_next = 0
         self.shadow: dict = {}
 
-    def set_properties_prefer_local(self, iot_id, items):
+    def set_properties(self, iot_id, items):
         if self.fail_next > 0:
             self.fail_next -= 1
             raise RuntimeError("network down")
@@ -41,7 +41,7 @@ class FakeClient:
         self.shadow.update(items)
         return {"code": 200}
 
-    def get_properties_prefer_local(self, iot_id):
+    def get_properties(self, iot_id):
         return dict(self.shadow)
 
 
@@ -122,6 +122,47 @@ class TestCommander(unittest.TestCase):
         self.assertEqual(len(client.writes), 1)
         self.assertEqual(client.writes[0]["Brightness"], 77)
         self.assertEqual(client.shadow["Brightness"], 77)
+
+    def test_terminal_failure_invokes_on_failure(self):
+        """After MAX_ATTEMPTS exhausted the on_failure callback must fire."""
+        client = FakeClient()
+        client.fail_next = 99  # every write fails
+        failures = []
+
+        async def on_failure():
+            failures.append(True)
+
+        cmd = AigoCommander(FakeHass(), client, "iot1", on_failure=on_failure)
+
+        async def scenario():
+            await cmd.async_send({"Brightness": 50})
+            for _ in range(80):
+                if failures:
+                    break
+                await asyncio.sleep(0.05)
+            await cmd.async_flush()
+            return cmd.in_skip()
+
+        still_skip = run(scenario())
+        self.assertEqual(len(failures), 1)
+        # skip window must be cleared so polls can restore real state
+        self.assertFalse(still_skip)
+
+    def test_terminal_failure_no_silent_loop(self):
+        """The old bug: after giving up, the loop continued and dropped silently.
+        Now _run must terminate after MAX_ATTEMPTS."""
+        client = FakeClient()
+        client.fail_next = 99
+        cmd = AigoCommander(FakeHass(), client, "iot1")
+
+        async def scenario():
+            await cmd.async_send({"Brightness": 50})
+            await cmd.async_flush()
+
+        run(scenario())
+        # exactly MAX_ATTEMPTS writes attempted, no endless retries
+        self.assertEqual(len(client.writes), 0)  # all failed (fail_next=99)
+        self.assertEqual(client.fail_next, 99 - 3)  # 3 attempts consumed
 
     def test_matches_helper(self):
         self.assertTrue(_matches({"Brightness": 50}, {"Brightness": 50}))

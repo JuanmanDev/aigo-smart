@@ -9,8 +9,12 @@ from unittest.mock import MagicMock
 sys.modules.setdefault("homeassistant", MagicMock())
 sys.modules.setdefault("homeassistant.config_entries", MagicMock())
 sys.modules.setdefault("homeassistant.core", MagicMock())
+sys.modules.setdefault("homeassistant.const", MagicMock())
 sys.modules.setdefault("homeassistant.helpers", MagicMock())
 sys.modules.setdefault("homeassistant.helpers.update_coordinator", MagicMock())
+sys.modules.setdefault("homeassistant.exceptions", MagicMock())
+sys.modules.setdefault("homeassistant.components", MagicMock())
+sys.modules.setdefault("voluptuous", MagicMock())
 
 # Provide a mock DataUpdateCoordinator base class
 class MockDataUpdateCoordinator:

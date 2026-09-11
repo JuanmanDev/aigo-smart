@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 DOMAIN = "aigosmart"
 _LOGGER = logging.getLogger(__name__)
@@ -19,11 +20,21 @@ DEFAULT_SCAN_INTERVAL = 30
 TOKEN_REFRESH_MARGIN = 600
 
 # Alibaba IoT device status codes (from the app's BaseDeviceStatus class,
-# classes11.dex: NOT_ACTIVATED=0, ONLINE=1, OFFLINE=3, DISABLED=8)
+# classes11.dex: NOT_ACTIVATED=0, ONLINE=1, OFFLINE=3, DISABLED=8).
+# NOTE: listBindingByAccount's "status" field is NOT a reliable online flag
+# for all accounts — an online device can report 3 there. When it does, the
+# real online state must be confirmed via /thing/status/get (apiVer 1.0.5).
 STATUS_NOT_ACTIVATED = 0
 STATUS_ONLINE = 1
 STATUS_OFFLINE = 3
 STATUS_DISABLED = 8
+
+def is_status_online(status: Any) -> bool:
+    """True only for the ONLINE code (int or numeric string)."""
+    try:
+        return int(status) == STATUS_ONLINE
+    except (TypeError, ValueError):
+        return False
 
 # Network types returned by list_devices (netType)
 NET_TYPE_WIFI = "NET_WIFI"

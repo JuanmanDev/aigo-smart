@@ -8,7 +8,7 @@
 [![Validate](https://img.shields.io/github/actions/workflow/status/JuanmanDev/aigo-smart/validate.yml?branch=main&style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/JuanmanDev/aigo-smart?style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/releases)
-[![Tests](https://img.shields.io/badge/tests-39%2F39-brightgreen?style=for-the-badge)](python_client/tests)
+[![Tests](https://img.shields.io/badge/tests-52%2F52-brightgreen?style=for-the-badge)](python_client/tests)
 
 Control your **Aigostar smart-home devices** (lights, plugs, heaters, air
 conditioners, fans, and 50+ other categories â€” 498 supported products) directly
@@ -22,6 +22,21 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
 > **Fun fact:** AigoSmart is *not* a Tuya system. Despite Tuya-OEM chips in some
 > devices, the cloud is **Alibaba Cloud IoT** and the local protocol is
 > **ALCS** (Alibaba Local Channel Service, CoAP over UDP).
+
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/list.jpeg" width="320" alt="AigoSmart shown in the Home Assistant integrations list">
+  &nbsp;&nbsp;
+  <img src="screenshots/devices.jpeg" width="600" alt="AigoSmart device list — 3 CCT panel lights across 3 rooms">
+</p>
+<p align="center">
+  <img src="screenshots/add.jpeg" width="320" alt="Login / config-flow dialog — enter your AigoSmart email and password">
+  &nbsp;&nbsp;
+  <img src="screenshots/ccr.jpeg" width="250" alt="CCT light control card — colour temperature (warm) mode">
+  &nbsp;&nbsp;
+  <img src="screenshots/level.jpeg" width="250" alt="CCT light control card — brightness / level mode">
+</p>
 
 ## Features
 
@@ -47,6 +62,12 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
   ALCS local keys and connection info
 - **Platforms:** light, switch, climate, fan, sensor, number, water_heater
 - **Standalone Python client + CLI** — test everything without Home Assistant
+
+<p align="center">
+  <img src="screenshots/ccr.jpeg" width="260" alt="CCT light control card — colour temperature (warm) mode">
+  &nbsp;&nbsp;
+  <img src="screenshots/level.jpeg" width="260" alt="CCT light control card — brightness / level mode">
+</p>
 
 ## Credits / related projects
 
@@ -92,11 +113,17 @@ Click the button above, or manually:
 
 Or manually:
 
-1. **Settings â†’ Devices & Services â†’ Add Integration**
+1. **Settings → Devices & Services → Add Integration**
 2. Search for **AigoSmart (unofficial)**
 3. Enter your AigoSmart app email and password
-4. If the server requests a verification code, it's sent to your email automatically â€” just type it in
+4. If the server requests a verification code, it's sent to your email automatically — just type it in
 5. All devices bound to your account appear automatically
+
+<p align="center">
+  <img src="screenshots/add.jpeg" width="340" alt="Config-flow login dialog — enter your AigoSmart email and password">
+  &nbsp;&nbsp;
+  <img src="screenshots/devices.jpeg" width="580" alt="Device list in Home Assistant after successful login">
+</p>
 
 ### Adding devices (full BLE provisioning)
 
@@ -189,6 +216,7 @@ productKey â†’ category catalog extracted from the APK, including:
 
 - **Login fails** â€” use the exact credentials that work in the AigoSmart app; check the verification-code email (including spam).
 - **Devices unavailable** â€” the device must be online in the AigoSmart app first.
+- **Changes in the app not reflected in HA** — HA re-reads the cloud shadow every 30 s, so external changes appear within ~30 s. Availability uses `/thing/status/get`, because the device-list `status` field is unreliable.
 - **New device not appearing** â€” wait â‰¤ 5 minutes for autodiscovery, or call `aigosmart.sync_devices`.
 - **BLE add-device finds nothing** â€” make sure the Home Assistant `bluetooth` integration is active and the device is in pairing mode (FEB3 advertisement).
 
