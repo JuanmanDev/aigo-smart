@@ -8,7 +8,7 @@ labels: bug
 
 **Device** (category / model, see `analysis/pk_catalog.json`):
 
-**Logs** (Settings â†’ System â†’ Logs, filter `aigosmart`):
+**Logs** (Settings → System → Logs, filter `aigosmart`):
 ```
 paste logs here
 ```

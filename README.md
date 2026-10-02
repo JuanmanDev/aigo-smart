@@ -5,18 +5,18 @@
 </p>
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
-[![Validate](https://img.shields.io/github/actions/workflow/status/JuanmanDev/aigo-smart/validate.yml?branch=main&style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/actions/workflows/validate.yml)
+[![Validate](https://img.shields.io/github/actions/workflow/status/JuanmanDev/aigo-smart/validate.yml?branch=master&style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/JuanmanDev/aigo-smart?style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/releases)
 [![Tests](https://img.shields.io/badge/tests-52%2F52-brightgreen?style=for-the-badge)](python_client/tests)
 
 Control your **Aigostar smart-home devices** (lights, plugs, heaters, air
-conditioners, fans, and 50+ other categories â€” 498 supported products) directly
-from Home Assistant â€” via the **AigoSmart cloud** and, where the device allows
+conditioners, fans, and 50+ other categories — 498 supported products) directly
+from Home Assistant — via the **AigoSmart cloud** and, where the device allows
 it, **locally over your LAN**.
 
 Everything here was built by **reverse engineering the AigoSmart Android app**
-(v2.15.6) â€” the full protocol documentation lives in
+(v2.15.6) — the full protocol documentation lives in
 [`analysis/REVERSE_ENGINEERING.md`](analysis/REVERSE_ENGINEERING.md).
 
 > **Fun fact:** AigoSmart is *not* a Tuya system. Despite Tuya-OEM chips in some
@@ -63,12 +63,6 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
 - **Platforms:** light, switch, climate, fan, sensor, number, water_heater
 - **Standalone Python client + CLI** — test everything without Home Assistant
 
-<p align="center">
-  <img src="screenshots/ccr.jpeg" width="260" alt="CCT light control card — colour temperature (warm) mode">
-  &nbsp;&nbsp;
-  <img src="screenshots/level.jpeg" width="260" alt="CCT light control card — brightness / level mode">
-</p>
-
 ## Credits / related projects
 
 This project stands on the shoulders of two earlier reverse-engineering efforts
@@ -94,7 +88,7 @@ platforms, the 498-product PK catalog, and the full
 Click the button above, or manually:
 
 1. Open **HACS** in Home Assistant
-2. Go to **Integrations** â†’ **â‹®** (top right) â†’ **Custom repositories**
+2. Go to **Integrations** → **⋮** (top right) → **Custom repositories**
 3. Add `https://github.com/JuanmanDev/aigo-smart` with category **Integration**
 4. Find **AigoSmart** in the list and install it
 5. Restart Home Assistant
@@ -131,7 +125,7 @@ Yes — you can add devices **directly from Home Assistant**, without the phone 
 
 1. Put the device in **pairing mode** (usually hold its power button ~5 seconds)
 2. Run the `aigosmart.add_device` service (Settings → Devices → AigoSmart → ⋮, or
-   Developer Tools → Services)
+   Developer Tools → Actions (or Services))
 3. Pick the device from the discovered list (BLE pairing devices advertise the
    Breeze service `0xFEB3`)
 4. Enter your **WiFi credentials** when prompted
@@ -182,11 +176,11 @@ The integration implements the exact same login flow as the Android app
 (reverse-engineered via APK decompilation and validated against the live
 servers):
 
-1. **UC Login** â€” authenticate with Aigostar's User Center
-2. **UC Authorize** â€” obtain an authorization code
-3. **Region Discovery** â€” resolve the correct regional gateway
-4. **OAuth Login** â€” exchange the authCode for a session
-5. **IoT Session** â€” obtain the iotToken used for all device API calls
+1. **UC Login** — authenticate with Aigostar's User Center
+2. **UC Authorize** — obtain an authorization code
+3. **Region Discovery** — resolve the correct regional gateway
+4. **OAuth Login** — exchange the authCode for a session
+5. **IoT Session** — obtain the iotToken used for all device API calls
 
 Device control uses the Alibaba IoT API Gateway (`/thing/properties/get|set`,
 `/thing/service/invoke`) with the same `x-ca-signature` HMAC-SHA1 signing as
@@ -198,9 +192,9 @@ Full technical details: [`analysis/REVERSE_ENGINEERING.md`](analysis/REVERSE_ENG
 
 ## Supported devices
 
-All 498 products that work with the AigoSmart app â€” see
+All 498 products that work with the AigoSmart app — see
 [`analysis/pk_catalog.json`](analysis/pk_catalog.json) for the complete
-productKey â†’ category catalog extracted from the APK, including:
+productKey → category catalog extracted from the APK, including:
 
 | Category | Examples |
 |---|---|
@@ -214,11 +208,11 @@ productKey â†’ category catalog extracted from the APK, including:
 
 ## Troubleshooting
 
-- **Login fails** â€” use the exact credentials that work in the AigoSmart app; check the verification-code email (including spam).
-- **Devices unavailable** â€” the device must be online in the AigoSmart app first.
+- **Login fails** — use the exact credentials that work in the AigoSmart app; check the verification-code email (including spam).
+- **Devices unavailable** — the device must be online in the AigoSmart app first.
 - **Changes in the app not reflected in HA** — HA re-reads the cloud shadow every 30 s, so external changes appear within ~30 s. Availability uses `/thing/status/get`, because the device-list `status` field is unreliable.
-- **New device not appearing** â€” wait â‰¤ 5 minutes for autodiscovery, or call `aigosmart.sync_devices`.
-- **BLE add-device finds nothing** â€” make sure the Home Assistant `bluetooth` integration is active and the device is in pairing mode (FEB3 advertisement).
+- **New device not appearing** — wait ≤ 5 minutes for autodiscovery, or call `aigosmart.sync_devices`.
+- **BLE add-device finds nothing** — make sure the Home Assistant `bluetooth` integration is active and the device is in pairing mode (FEB3 advertisement).
 
 ## 💕 Support this project
 If you found this project helpful, please consider supporting it!
@@ -230,7 +224,7 @@ If you found this project helpful, please consider supporting it!
 ## Attribution
 
 This project was created using the **GLM 5.3 Free** model from
-[Token Router](https://tokenrouter.io/) â€” the reverse engineering, protocol
+[Token Router](https://tokenrouter.io/) — the reverse engineering, protocol
 implementation, integration architecture, and documentation were all produced
 with it as the coding assistant. If you're curious about AI-assisted reverse
 engineering of IoT protocols, this repo is a fully worked example.
