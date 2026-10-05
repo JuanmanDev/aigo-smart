@@ -40,6 +40,8 @@ from .const import (
     DOMAIN,
     KELVIN_COOL,
     KELVIN_WARM,
+    PROP_AQUARIUM_BRIGHTNESS,
+    PROP_AQUARIUM_LIGHT_SWITCH,
     PROP_BRIGHTNESS_CANDIDATES,
     PROP_COLOR_TEMP_CANDIDATES,
     PROP_HSV_CANDIDATES,
@@ -54,7 +56,7 @@ from .const import (
 )
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry, platform_for_device
-from .helpers import is_bt_device, is_fan_device, is_gateway_device, is_kettle_device
+from .helpers import is_aquarium_device as _is_aquarium, is_bt_device, is_fan_device, is_gateway_device, is_kettle_device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +79,7 @@ async def async_setup_entry(
     pk_catalog: dict = state["pk_catalog"]
     client = state["client"]
     registry.register("light")
+    registry.register("aquarium")
 
     def _is_light(dev: dict) -> bool:
         # gateways, fans and kettles must not become lights
@@ -84,12 +87,23 @@ async def async_setup_entry(
             return False
         return platform_for_device(dev, pk_catalog) == "light"
 
+    def _is_aquarium_light(dev: dict) -> bool:
+        # Only process aquarium devices
+        if not is_aquarium_device(dev):
+            return False
+        # Should not be a gateway, fan, or kettle
+        if is_gateway_device(dev) or is_fan_device(dev) or is_kettle_device(dev):
+            return False
+        return True
+
     def _make_entities() -> list:
         out = []
         for dev in coordinator.devices:
             iot_id = dev.get("iotId", "")
             if iot_id and iot_id not in registry._known["light"] and _is_light(dev):
                 out.append(AigoSmartLight(coordinator, dev, state))
+            if iot_id and iot_id not in registry._known["aquarium"] and _is_aquarium_light(dev):
+                out.append(AigoSmartAquariumLight(coordinator, dev, state))
         return out
 
     @callback
@@ -97,7 +111,10 @@ async def async_setup_entry(
         new = _make_entities()
         if new:
             for e in new:
-                registry._known["light"].add(e._iot_id)
+                if isinstance(e, AigoSmartLight):
+                    registry._known["light"].add(e._iot_id)
+                elif isinstance(e, AigoSmartAquariumLight):
+                    registry._known["aquarium"].add(e._iot_id)
             async_add_entities(new)
 
     _async_handle_new()
@@ -345,3 +362,109 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         if self._commander is not None:
             await self._commander.async_flush()
         await super().async_will_remove_from_hass()
+
+class AigoSmartAquariumLight(AigoSmartLight):
+    """Aquarium light (sub-entity of a composite device)."""
+
+    def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
+                 state: dict | None = None) -> None:
+        super().__init__(coordinator, dev, state)
+        self._prop_switch = PROP_AQUARIUM_LIGHT_SWITCH
+        self._prop_brightness = PROP_AQUARIUM_BRIGHTNESS
+        # Aquarium light doesn't support color temperature, so clear it
+        self._prop_color_temp = None
+
+        self._attr_unique_id = f"{self._iot_id}_light"
+        self._attr_name = "Light"
+
+        # Override device info to link to the main aquarium device
+        name = dev.get("nickName") or dev.get("deviceName") or "Aigo Aquarium"
+        fw = dev.get("firmwareVersion") or dev.get("moduleVersion") or None
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._iot_id)},
+            name=name,
+            manufacturer="Aigostar",
+            model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
+            sw_version=fw,
+            configuration_url="https://www.aigostar.com",
+        )
+
+    @property
+    def supported_color_modes(self) -> set[ColorMode]:
+        # Aquarium light only supports brightness
+        return {ColorMode.BRIGHTNESS}
+    
+    @property
+    def color_mode(self) -> ColorMode:
+        return ColorMode.BRIGHTNESS
+
+    def _apply(self, props: dict) -> None:
+        # switch
+        if self._prop_switch in props:
+            self._is_on = bool(props[self._prop_switch])
+
+        # brightness (aquarium uses 1-100, HA uses 0-255)
+        if self._prop_brightness in props:
+            try:
+                v = int(props[self._prop_brightness])
+                self._brightness = max(1, round(v / 100 * 255))
+            except (TypeError, ValueError):
+                _LOGGER.debug(
+                    "AigoSmart: non-numeric property value for %s",
+                    self._iot_id,
+                )
+        self._hs = None # Ensure HS color is cleared for brightness-only mode
+        self._color_temp_k = None # Ensure color temperature is cleared
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        items: dict[str, Any] = {self._prop_switch: 1}
+        # Save rollback state — restored if the write fails terminally
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
+        self._is_on = True
+
+        if ATTR_BRIGHTNESS in kwargs:
+            brightness = kwargs[ATTR_BRIGHTNESS]
+            items[self._prop_brightness] = max(1, round(brightness / 255 * 100))
+            self._brightness = brightness
+
+        # Aquarium light does not support color temperature or HS color
+        # only brightness
+
+        # Optimistic state is already applied above; the commander serializes
+        # rapid consecutive calls (slider moves) into one verified write.
+        self.async_write_ha_state()
+        self._coordinator.async_set_optimistic_props(self._iot_id, items, hold_duration=12.0)
+        if self._commander is not None:
+            await self._commander.async_send(items)
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties, self._iot_id, items
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart turn_on failed for %s: %s", self._iot_id, exc)
+                self._revert(prev)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
+        self._is_on = False
+        self.async_write_ha_state()
+        self._coordinator.async_set_optimistic_props(
+            self._iot_id, {self._prop_switch: 0}, hold_duration=12.0)
+        if self._commander is not None:
+            await self._commander.async_send({self._prop_switch: 0})
+        else:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._coordinator.client.set_properties,
+                    self._iot_id, {self._prop_switch: 0},
+                )
+            except Exception as exc:
+                _LOGGER.warning("AigoSmart turn_off failed for %s: %s", self._iot_id, exc)
+                self._revert(prev)
+
+    def _revert(self, prev: tuple) -> None:
+        """Restore pre-command state after a failed write."""
+        self._is_on, self._brightness, self._color_temp_k, self._hs = prev
+        self._coordinator.clear_optimistic_props(self._iot_id)
+        self.async_write_ha_state()

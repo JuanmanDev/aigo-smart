@@ -83,3 +83,42 @@ PROP_HUMIDITY = "humidity"
 
 KELVIN_WARM = 2700
 KELVIN_COOL = 6500
+
+# --- Aquarium TSL properties ---------------------------------------------------
+PROP_AQUARIUM_POWER = "powerstate"
+PROP_AQUARIUM_LIGHT_SWITCH = "LightSwitch"
+PROP_AQUARIUM_BRIGHTNESS = "brightness"
+PROP_AQUARIUM_WATER_TEMP = "currentTemperature"
+PROP_AQUARIUM_PUMP_LEVEL = "waterPumpLevel"
+PROP_AQUARIUM_PUMP_STATUS = "waterPumpStatus"
+PROP_AQUARIUM_FEED_PROTECT = "feedingFunction"
+PROP_AQUARIUM_FEED_MANUAL = "manualFeeding"
+PROP_AQUARIUM_FEED_STATE = "feedState"
+PROP_AQUARIUM_FEED_COUNT = "feedCnt"
+PROP_AQUARIUM_FEED_REMIND = "feedCntRemind"
+PROP_AQUARIUM_CHILD_LOCK = "childLockOnOff"
+PROP_AQUARIUM_CUE_SOUND = "CueSound"
+PROP_AQUARIUM_IND_MODE = "IndMode"
+PROP_AQUARIUM_ERROR_CODE = "errorCode"
+PROP_AQUARIUM_REMIND_DURATION = "remindDuration"
+PROP_AQUARIUM_RHYTHM_ENABLE = "DeviceRhythmEnable"
+
+# Enum mappings for aquarium properties
+AQUARIUM_ERROR_CODES = {
+    0: "normal",
+    240: "feeder_uninstalled",
+    244: "low_food",
+}
+
+AQUARIUM_WATER_PUMP_STATUS = {
+    0: "working",
+    1: "fault",
+    2: "paused",
+    3: "off",
+}
+
+AQUARIUM_FEED_STATE = {
+    0: "standby",
+    1: "feeding",
+    2: "completed",
+}

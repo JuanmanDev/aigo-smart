@@ -40,6 +40,8 @@ CATEGORY_PLATFORM = {
     "fan": "fan", "towerfan": "fan", "intelligentfan": "fan",
     # sensors
     "sensor": "sensor", "smokealarm": "sensor", "doorcontact": "sensor",
+    # aquarium (composite device - handled by multiple platforms)
+    "aquarium": "aquarium",
 }
 
 # Heater-family also climate
@@ -49,6 +51,15 @@ for _h in ("electrician",):
 
 def platform_for_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> str | None:
     """Decide which HA platform a cloud device should map to."""
+    # Special handling for aquarium as a composite device
+    cat = (dev.get("categoryKey") or "").strip().lower()
+    product = (dev.get("productName") or "").strip().lower()
+    name = (dev.get("deviceName") or "").strip().lower()
+    is_aquarium = cat == "aquarium" or "aquarium" in product or "水族" in product or "aquarium" in name or "水族" in name
+    
+    if is_aquarium:
+        return "aquarium"
+
     # 1. cloud-provided categoryKey (definitive when present)
     cat = (dev.get("categoryKey") or "").strip().lower()
     if not cat:
@@ -62,6 +73,8 @@ def platform_for_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> 
             if key in name:
                 return plat
         return None
+
+
     return CATEGORY_PLATFORM.get(cat)
 
 

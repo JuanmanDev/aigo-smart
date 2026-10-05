@@ -28,3 +28,11 @@ def is_gateway_device(dev: dict) -> bool:
 def is_bt_device(dev: dict) -> bool:
     """BLE mesh device (routed through a gateway / phone app)."""
     return dev.get("netType") == "NET_BT"
+
+
+def is_aquarium_device(dev: dict) -> bool:
+    """Check if a device is an aquarium (category=Aquarium or productName contains aquarium/水族)."""
+    category = (dev.get("categoryKey") or "").strip().lower()
+    product = (dev.get("productName") or "").strip().lower()
+    name = (dev.get("deviceName") or "").strip().lower()
+    return category == "aquarium" or "aquarium" in product or "水族" in product or "aquarium" in name or "水族" in name
