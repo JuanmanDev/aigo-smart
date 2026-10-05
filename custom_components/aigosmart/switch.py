@@ -206,7 +206,7 @@ class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
         await super().async_will_remove_from_hass()
 
 class AigoSmartAquariumPower(AigoSmartSwitch):
-    \"\"\"Master power switch for the aquarium.\"\"\"
+    """Master power switch for the aquarium."""
 
     def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
                  state: dict | None = None) -> None:
@@ -222,8 +222,8 @@ class AigoSmartAquariumPower(AigoSmartSwitch):
         )
 
 
-class AigoSmartAquariumChildLock(AigoSmartSwitch):\
-    \"\"\"Child lock switch for the aquarium.\"\"\"\
+class AigoSmartAquariumChildLock(AigoSmartSwitch):
+    """Child lock switch for the aquarium."""
 
     _attr_icon = "mdi:lock"
 
@@ -241,8 +241,8 @@ class AigoSmartAquariumChildLock(AigoSmartSwitch):\
         )
 
 
-class AigoSmartAquariumBuzzer(AigoSmartSwitch):\
-    \"\"\"Buzzer sound switch for the aquarium.\"\"\"\
+class AigoSmartAquariumBuzzer(AigoSmartSwitch):
+    """Buzzer sound switch for the aquarium."""
 
     _attr_icon = "mdi:volume-high"
 
@@ -260,8 +260,8 @@ class AigoSmartAquariumBuzzer(AigoSmartSwitch):\
         )
 
 
-class AigoSmartAquariumIndicator(AigoSmartSwitch):\
-    \"\"\"Status indicator LED switch for the aquarium.\"\"\"\
+class AigoSmartAquariumIndicator(AigoSmartSwitch):
+    """Status indicator LED switch for the aquarium."""
 
     _attr_icon = "mdi:led-on"
 
@@ -279,8 +279,8 @@ class AigoSmartAquariumIndicator(AigoSmartSwitch):\
         )
 
 
-class AigoSmartAquariumFeedProtect(AigoSmartSwitch):\
-    \"\"\"Feeding protection switch for the aquarium.\"\"\"\
+class AigoSmartAquariumFeedProtect(AigoSmartSwitch):
+    """Feeding protection switch for the aquarium."""
 
     _attr_icon = "mdi:shield-check"
 
@@ -298,8 +298,8 @@ class AigoSmartAquariumFeedProtect(AigoSmartSwitch):\
         )
 
 
-class AigoSmartAquariumFeedRemind(AigoSmartSwitch):\
-    \"\"\"Overfeeding reminder switch for the aquarium.\"\"\"\
+class AigoSmartAquariumFeedRemind(AigoSmartSwitch):
+    """Overfeeding reminder switch for the aquarium."""
 
     _attr_icon = "mdi:bell-alert"
 
@@ -317,8 +317,8 @@ class AigoSmartAquariumFeedRemind(AigoSmartSwitch):\
         )
 
 
-class AigoSmartAquariumRhythm(AigoSmartSwitch):\
-    \"\"\"Rhythm mode switch for the aquarium.\"\"\"\
+class AigoSmartAquariumRhythm(AigoSmartSwitch):
+    """Rhythm mode switch for the aquarium."""
 
     _attr_icon = "mdi:music"
 
@@ -333,7 +333,10 @@ class AigoSmartAquariumRhythm(AigoSmartSwitch):\
             name=dev.get("nickName") or dev.get("deviceName") or "Aigo Aquarium",
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
-        )\n\nclass AigoFanBuzzer(CoordinatorEntity, SwitchEntity):
+        )
+
+
+class AigoFanBuzzer(CoordinatorEntity, SwitchEntity):
     """Key beep on/off for a fan (buzzerSwitch)."""
 
     _attr_name = "Key beep"
