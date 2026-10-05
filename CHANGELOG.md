@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0] - 2026-10-05
+
+### Added
+
+- Support for Aigostar Smart Aquarium (`a191KWgv5BZ` / `智能水族_ZS029_ZY_WB`):
+  - **Light platform**: Light On/Off and brightness adjustment (`LightSwitch`, `brightness`).
+  - **Switch platform**: Master Power (`powerstate`), Child Lock (`childLockOnOff`), Buzzer Sound (`CueSound`), Status Indicator LED (`IndMode`), Feeding Protection (`feedingFunction`), Overfeeding Reminder (`feedCntRemind`), and Rhythm Mode (`DeviceRhythmEnable`).
+  - **Sensor platform**: Water temperature monitoring (`currentTemperature` in °C), water pump status (`waterPumpStatus`), feeding state (`feedState`), cumulative feed count (`feedCnt`), and error code diagnostics (`errorCode`).
+  - Discovery support for composite appliances with multi-platform entities.
+
 ## [0.4.1] - 2026-09-10
 
 ### Fixed
