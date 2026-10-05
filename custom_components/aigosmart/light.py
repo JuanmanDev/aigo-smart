@@ -56,7 +56,13 @@ from .const import (
 )
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry, platform_for_device
-from .helpers import is_aquarium_device as _is_aquarium, is_bt_device, is_fan_device, is_gateway_device, is_kettle_device
+from .helpers import (
+    is_aquarium_device,
+    is_bt_device,
+    is_fan_device,
+    is_gateway_device,
+    is_kettle_device,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,20 +82,19 @@ async def async_setup_entry(
     state = hass.data[DOMAIN][entry.entry_id]
     coordinator: AigoDataUpdateCoordinator = state["coordinator"]
     registry: DeviceRegistry = state["registry"]
-    pk_catalog: dict = state["pk_catalog"]
+    pk_catalog: dict = state.get("pk_catalog", {})
     client = state["client"]
     registry.register("light")
-    registry.register("aquarium")
 
     def _is_light(dev: dict) -> bool:
-        # gateways, fans and kettles must not become lights
-        if is_gateway_device(dev) or is_fan_device(dev) or is_kettle_device(dev):
+        # gateways, fans, kettles and aquariums must not become standard lights
+        if is_gateway_device(dev) or is_fan_device(dev) or is_kettle_device(dev) or is_aquarium_device(dev, pk_catalog):
             return False
         return platform_for_device(dev, pk_catalog) == "light"
 
     def _is_aquarium_light(dev: dict) -> bool:
         # Only process aquarium devices
-        if not is_aquarium_device(dev):
+        if not is_aquarium_device(dev, pk_catalog):
             return False
         # Should not be a gateway, fan, or kettle
         if is_gateway_device(dev) or is_fan_device(dev) or is_kettle_device(dev):
@@ -100,21 +105,20 @@ async def async_setup_entry(
         out = []
         for dev in coordinator.devices:
             iot_id = dev.get("iotId", "")
-            if iot_id and iot_id not in registry._known["light"] and _is_light(dev):
-                out.append(AigoSmartLight(coordinator, dev, state))
-            if iot_id and iot_id not in registry._known["aquarium"] and _is_aquarium_light(dev):
+            if not iot_id or iot_id in registry._known["light"]:
+                continue
+            if _is_aquarium_light(dev):
+                registry._known["light"].add(iot_id)
                 out.append(AigoSmartAquariumLight(coordinator, dev, state))
+            elif _is_light(dev):
+                registry._known["light"].add(iot_id)
+                out.append(AigoSmartLight(coordinator, dev, state))
         return out
 
     @callback
     def _async_handle_new(*_args) -> None:
         new = _make_entities()
         if new:
-            for e in new:
-                if isinstance(e, AigoSmartLight):
-                    registry._known["light"].add(e._iot_id)
-                elif isinstance(e, AigoSmartAquariumLight):
-                    registry._known["aquarium"].add(e._iot_id)
             async_add_entities(new)
 
     _async_handle_new()
@@ -388,6 +392,7 @@ class AigoSmartAquariumLight(AigoSmartLight):
             sw_version=fw,
             configuration_url="https://www.aigostar.com",
         )
+        self._apply(self._coordinator.props.get(self._iot_id, {}))
 
     @property
     def supported_color_modes(self) -> set[ColorMode]:

@@ -49,15 +49,32 @@ for _h in ("electrician",):
     pass
 
 
+try:
+    from .helpers import is_aquarium_device
+except ImportError:
+    try:
+        from helpers import is_aquarium_device
+    except ImportError:
+        def is_aquarium_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> bool:
+            cat = (dev.get("categoryKey") or "").strip().lower()
+            if not cat and pk_catalog:
+                cat = pk_catalog.get(dev.get("productKey", ""), "").lower()
+            product = (dev.get("productName") or "").strip().lower()
+            name = (dev.get("deviceName") or "").strip().lower()
+            nick = (dev.get("nickName") or "").strip().lower()
+            pk = (dev.get("productKey") or "").strip()
+            return (
+                cat == "aquarium"
+                or pk == "a191KWgv5BZ"
+                or "aquarium" in product or "水族" in product
+                or "aquarium" in name or "水族" in name
+                or "aquarium" in nick or "水族" in nick
+            )
+
+
 def platform_for_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> str | None:
     """Decide which HA platform a cloud device should map to."""
-    # Special handling for aquarium as a composite device
-    cat = (dev.get("categoryKey") or "").strip().lower()
-    product = (dev.get("productName") or "").strip().lower()
-    name = (dev.get("deviceName") or "").strip().lower()
-    is_aquarium = cat == "aquarium" or "aquarium" in product or "水族" in product or "aquarium" in name or "水族" in name
-    
-    if is_aquarium:
+    if is_aquarium_device(dev, pk_catalog):
         return "aquarium"
 
     # 1. cloud-provided categoryKey (definitive when present)

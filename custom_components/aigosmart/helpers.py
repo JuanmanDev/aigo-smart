@@ -30,9 +30,19 @@ def is_bt_device(dev: dict) -> bool:
     return dev.get("netType") == "NET_BT"
 
 
-def is_aquarium_device(dev: dict) -> bool:
-    """Check if a device is an aquarium (category=Aquarium or productName contains aquarium/水族)."""
+def is_aquarium_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> bool:
+    """Check if a device is an aquarium."""
     category = (dev.get("categoryKey") or "").strip().lower()
+    if not category and pk_catalog:
+        category = pk_catalog.get(dev.get("productKey", ""), "").lower()
     product = (dev.get("productName") or "").strip().lower()
     name = (dev.get("deviceName") or "").strip().lower()
-    return category == "aquarium" or "aquarium" in product or "水族" in product or "aquarium" in name or "水族" in name
+    nick = (dev.get("nickName") or "").strip().lower()
+    pk = (dev.get("productKey") or "").strip()
+    return (
+        category == "aquarium"
+        or pk == "a191KWgv5BZ"
+        or "aquarium" in product or "水族" in product
+        or "aquarium" in name or "水族" in name
+        or "aquarium" in nick or "水族" in nick
+    )

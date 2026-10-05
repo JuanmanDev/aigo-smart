@@ -42,55 +42,60 @@ async def async_setup_entry(
     state = hass.data[DOMAIN][entry.entry_id]
     coordinator: AigoDataUpdateCoordinator = state["coordinator"]
     registry: DeviceRegistry = state["registry"]
-    pk_catalog: dict = state["pk_catalog"]
+    pk_catalog: dict = state.get("pk_catalog", {})
     registry.register("switch")
-    registry.register("aquarium")
+
+    known_switches = registry._known["switch"]
 
     def _make_entities() -> list:
         out = []
         for dev in coordinator.devices:
             iot_id = dev.get("iotId", "")
-            if not iot_id or iot_id in registry._known["switch"]:
+            if not iot_id:
                 continue
+
             # aquarium sub-entities
-            if is_aquarium_device(dev):
+            if is_aquarium_device(dev, pk_catalog):
+                props = coordinator.props.get(iot_id, {})
                 # Master Power (powerstate)
-                if PROP_AQUARIUM_POWER in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_POWER in props and f"{iot_id}_power" not in known_switches:
+                    known_switches.add(f"{iot_id}_power")
                     out.append(AigoSmartAquariumPower(coordinator, dev, state))
                 # Child Lock
-                if PROP_AQUARIUM_CHILD_LOCK in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_CHILD_LOCK in props and f"{iot_id}_child_lock" not in known_switches:
+                    known_switches.add(f"{iot_id}_child_lock")
                     out.append(AigoSmartAquariumChildLock(coordinator, dev, state))
                 # Buzzer/CueSound
-                if PROP_AQUARIUM_CUE_SOUND in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_CUE_SOUND in props and f"{iot_id}_buzzer" not in known_switches:
+                    known_switches.add(f"{iot_id}_buzzer")
                     out.append(AigoSmartAquariumBuzzer(coordinator, dev, state))
                 # Status Indicator LED
-                if PROP_AQUARIUM_IND_MODE in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_IND_MODE in props and f"{iot_id}_indicator" not in known_switches:
+                    known_switches.add(f"{iot_id}_indicator")
                     out.append(AigoSmartAquariumIndicator(coordinator, dev, state))
                 # Feeding Protection
-                if PROP_AQUARIUM_FEED_PROTECT in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_FEED_PROTECT in props and f"{iot_id}_feed_protect" not in known_switches:
+                    known_switches.add(f"{iot_id}_feed_protect")
                     out.append(AigoSmartAquariumFeedProtect(coordinator, dev, state))
                 # Overfeeding Reminder
-                if PROP_AQUARIUM_FEED_REMIND in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_FEED_REMIND in props and f"{iot_id}_feed_remind" not in known_switches:
+                    known_switches.add(f"{iot_id}_feed_remind")
                     out.append(AigoSmartAquariumFeedRemind(coordinator, dev, state))
                 # Rhythm Mode
-                if PROP_AQUARIUM_RHYTHM_ENABLE in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_AQUARIUM_RHYTHM_ENABLE in props and f"{iot_id}_rhythm" not in known_switches:
+                    known_switches.add(f"{iot_id}_rhythm")
                     out.append(AigoSmartAquariumRhythm(coordinator, dev, state))
                 continue
+
             # fan buzzer sub-entity (fans get their own switch for the beep)
             if is_fan_device(dev):
-                if PROP_FAN_BUZZER in coordinator.props.get(iot_id, {}):
-                    registry._known["switch"].add(iot_id)
+                if PROP_FAN_BUZZER in coordinator.props.get(iot_id, {}) and f"{iot_id}_buzzer" not in known_switches:
+                    known_switches.add(f"{iot_id}_buzzer")
                     out.append(AigoFanBuzzer(coordinator, dev, state))
                 continue
-            if platform_for_device(dev, pk_catalog) == "switch":
-                registry._known["switch"].add(iot_id)
+
+            if platform_for_device(dev, pk_catalog) == "switch" and iot_id not in known_switches:
+                known_switches.add(iot_id)
                 out.append(AigoSmartSwitch(coordinator, dev, state))
         return out
 
@@ -220,6 +225,7 @@ class AigoSmartAquariumPower(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoSmartAquariumChildLock(AigoSmartSwitch):
@@ -239,6 +245,7 @@ class AigoSmartAquariumChildLock(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoSmartAquariumBuzzer(AigoSmartSwitch):
@@ -258,6 +265,7 @@ class AigoSmartAquariumBuzzer(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoSmartAquariumIndicator(AigoSmartSwitch):
@@ -277,6 +285,7 @@ class AigoSmartAquariumIndicator(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoSmartAquariumFeedProtect(AigoSmartSwitch):
@@ -296,6 +305,7 @@ class AigoSmartAquariumFeedProtect(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoSmartAquariumFeedRemind(AigoSmartSwitch):
@@ -315,6 +325,7 @@ class AigoSmartAquariumFeedRemind(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoSmartAquariumRhythm(AigoSmartSwitch):
@@ -334,6 +345,7 @@ class AigoSmartAquariumRhythm(AigoSmartSwitch):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "smart aquarium",
         )
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
 
 class AigoFanBuzzer(CoordinatorEntity, SwitchEntity):
