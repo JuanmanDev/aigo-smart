@@ -31,11 +31,13 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
   <img src="screenshots/devices.jpeg" width="600" alt="AigoSmart device list — 3 CCT panel lights across 3 rooms">
 </p>
 <p align="center">
-  <img src="screenshots/add.jpeg" width="320" alt="Login / config-flow dialog — enter your AigoSmart email and password">
+  <img src="screenshots/add.jpeg" width="260" alt="Login / config-flow dialog — enter your AigoSmart email and password">
   &nbsp;&nbsp;
-  <img src="screenshots/ccr.jpeg" width="250" alt="CCT light control card — colour temperature (warm) mode">
+  <img src="screenshots/ccr.jpeg" width="200" alt="CCT light control card — colour temperature (warm) mode">
   &nbsp;&nbsp;
-  <img src="screenshots/level.jpeg" width="250" alt="CCT light control card — brightness / level mode">
+  <img src="screenshots/level.jpeg" width="200" alt="CCT light control card — brightness / level mode">
+  &nbsp;&nbsp;
+  <img src="screenshots/aquarium.png" width="200" alt="Smart Aquarium device page — controls and sensors (tested by @bduartept1)">
 </p>
 
 ## Features
@@ -57,10 +59,11 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
 - **Fans done right** — speed 1-3, preset modes (Normal/Natural/Sleep),
   oscillation, auto-off timer (number), key-beep switch
 - **Kettles** — exposed as water_heater (target temperature, on/off)
+- **Smart Aquariums** — full controls (power, RGB lighting color wheel & 12 scenes, 3-speed water pump selector, buzzer, child lock, feeding protection/reminder) and sensors (temperature, feeding state, error telemetry)
 - **Diagnostics** — native Download-diagnostics button on the integration
   and every device page, with cloud metadata, live properties, full TSL model,
   ALCS local keys and connection info
-- **Platforms:** light, switch, climate, fan, sensor, number, water_heater
+- **Platforms:** light, switch, climate, fan, sensor, number, water_heater, select
 - **Standalone Python client + CLI** — test everything without Home Assistant
 
 ## Credits / related projects
@@ -75,9 +78,13 @@ and extends them:
 
 **This repo adds:** the standalone Python client/CLI (test without HA),
 autodiscovery coordinator, LAN ALCS listener + local control, BLE/WiFi
-add-device flows, diagnostics with device detail, climate/switch/sensor
+add-device flows, diagnostics with device detail, climate/switch/sensor/select
 platforms, the 498-product PK catalog, and the full
 [reverse-engineering documentation](analysis/REVERSE_ENGINEERING.md).
+
+### Community Contributors & Helpers
+
+- [@bduartept1](https://github.com/bduartept1) — for reporting issue [#1](https://github.com/JuanmanDev/aigo-smart/issues/1), testing multiple releases, providing device diagnostics, TSL models, and screenshots to make the **AigoSmart Aquarium** fully supported in Home Assistant!
 
 ## Installation
 
