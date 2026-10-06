@@ -148,7 +148,8 @@ def _matches(props: dict, items: dict) -> bool:
                     if int(float(got.get(member, -1))) != int(float(mval)):
                         return False
                 except (TypeError, ValueError):
-                    return False
+                    if got.get(member) != mval:
+                        return False
         else:
             try:
                 if int(float(got)) != int(float(want)):

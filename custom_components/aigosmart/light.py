@@ -10,15 +10,19 @@ when available. Wi-Fi (TG7100C) and BLE Mesh products both work.
 """
 from __future__ import annotations
 
+import json
 import logging
+import re
 from typing import Any
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_COLOR_TEMP_KELVIN,
+    ATTR_EFFECT,
     ATTR_HS_COLOR,
     ColorMode,
     LightEntity,
+    LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -41,6 +45,8 @@ from .const import (
     KELVIN_COOL,
     KELVIN_WARM,
     PROP_AQUARIUM_BRIGHTNESS,
+    PROP_AQUARIUM_LIGHT_SCENE,
+    PROP_AQUARIUM_LIGHT_SCENE_ID,
     PROP_AQUARIUM_LIGHT_SWITCH,
     PROP_BRIGHTNESS_CANDIDATES,
     PROP_COLOR_TEMP_CANDIDATES,
@@ -368,18 +374,20 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         await super().async_will_remove_from_hass()
 
 class AigoSmartAquariumLight(AigoSmartLight):
-    """Aquarium light (sub-entity of a composite device)."""
+    """Aquarium light with RGB color and preset scene effect support."""
 
     def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
                  state: dict | None = None) -> None:
         super().__init__(coordinator, dev, state)
         self._prop_switch = PROP_AQUARIUM_LIGHT_SWITCH
         self._prop_brightness = PROP_AQUARIUM_BRIGHTNESS
-        # Aquarium light doesn't support color temperature, so clear it
         self._prop_color_temp = None
 
         self._attr_unique_id = f"{self._iot_id}_light"
         self._attr_name = "Light"
+        self._attr_supported_features = LightEntityFeature.EFFECT
+        self._attr_effect_list = [f"Scene {i}" for i in range(1, 13)]
+        self._attr_effect = None
 
         # Override device info to link to the main aquarium device
         name = dev.get("nickName") or dev.get("deviceName") or "Aigo Aquarium"
@@ -396,17 +404,27 @@ class AigoSmartAquariumLight(AigoSmartLight):
 
     @property
     def supported_color_modes(self) -> set[ColorMode]:
-        # Aquarium light only supports brightness
-        return {ColorMode.BRIGHTNESS}
-    
+        return {ColorMode.HS}
+
     @property
     def color_mode(self) -> ColorMode:
-        return ColorMode.BRIGHTNESS
+        return ColorMode.HS
+
+    @property
+    def effect_list(self) -> list[str] | None:
+        return self._attr_effect_list
+
+    @property
+    def effect(self) -> str | None:
+        return self._attr_effect
 
     def _apply(self, props: dict) -> None:
         # switch
         if self._prop_switch in props:
-            self._is_on = bool(props[self._prop_switch])
+            try:
+                self._is_on = bool(int(props[self._prop_switch]))
+            except (TypeError, ValueError):
+                self._is_on = bool(props[self._prop_switch])
 
         # brightness (aquarium uses 1-100, HA uses 0-255)
         if self._prop_brightness in props:
@@ -418,13 +436,50 @@ class AigoSmartAquariumLight(AigoSmartLight):
                     "AigoSmart: non-numeric property value for %s",
                     self._iot_id,
                 )
-        self._hs = None # Ensure HS color is cleared for brightness-only mode
-        self._color_temp_k = None # Ensure color temperature is cleared
+
+        # scene ID (1..12)
+        if PROP_AQUARIUM_LIGHT_SCENE_ID in props:
+            try:
+                sid = int(props[PROP_AQUARIUM_LIGHT_SCENE_ID])
+                if 1 <= sid <= 12:
+                    self._attr_effect = f"Scene {sid}"
+            except (TypeError, ValueError):
+                pass
+
+        # LightScene struct: extract HS color if color mode active
+        if PROP_AQUARIUM_LIGHT_SCENE in props:
+            raw_scene = props[PROP_AQUARIUM_LIGHT_SCENE]
+            scene = as_struct(raw_scene)
+            if scene:
+                color_arr_raw = scene.get("ColorArr")
+                if color_arr_raw:
+                    color_arr = None
+                    if isinstance(color_arr_raw, str):
+                        try:
+                            color_arr = json.loads(color_arr_raw)
+                        except (TypeError, ValueError):
+                            color_arr = None
+                    elif isinstance(color_arr_raw, list):
+                        color_arr = color_arr_raw
+
+                    if color_arr and isinstance(color_arr, list) and isinstance(color_arr[0], dict):
+                        h = color_arr[0].get("Hue")
+                        s = color_arr[0].get("Saturation")
+                        if h is not None and s is not None:
+                            try:
+                                h_val = float(h)
+                                s_val = float(s)
+                                if scene.get("LightMode") == 1 or h_val > 0 or s_val > 0:
+                                    self._hs = (max(0.0, min(360.0, h_val)), max(0.0, min(100.0, s_val)))
+                            except (TypeError, ValueError):
+                                pass
+
+        self._color_temp_k = None  # Ensure color temperature is cleared
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         items: dict[str, Any] = {self._prop_switch: 1}
         # Save rollback state — restored if the write fails terminally
-        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs, self._attr_effect)
         self._is_on = True
 
         if ATTR_BRIGHTNESS in kwargs:
@@ -432,11 +487,34 @@ class AigoSmartAquariumLight(AigoSmartLight):
             items[self._prop_brightness] = max(1, round(brightness / 255 * 100))
             self._brightness = brightness
 
-        # Aquarium light does not support color temperature or HS color
-        # only brightness
+        if ATTR_EFFECT in kwargs:
+            effect_name = str(kwargs[ATTR_EFFECT])
+            digits = re.findall(r"\d+", effect_name)
+            if digits:
+                sid = int(digits[0])
+                if 1 <= sid <= 12:
+                    items[PROP_AQUARIUM_LIGHT_SCENE_ID] = sid
+                    self._attr_effect = f"Scene {sid}"
 
-        # Optimistic state is already applied above; the commander serializes
-        # rapid consecutive calls (slider moves) into one verified write.
+        if ATTR_HS_COLOR in kwargs:
+            h, s = kwargs[ATTR_HS_COLOR]
+            self._hs = (float(h), float(s))
+            self._attr_effect = None
+            val = max(1, min(100, round(self._brightness / 255 * 100))) if self._brightness else 100
+            color_arr = [{"Hue": round(float(h)), "Saturation": round(float(s)), "Value": val}]
+            items[PROP_AQUARIUM_LIGHT_SCENE] = {
+                "LightMode": 1,
+                "SceneMode": 0,
+                "ColorSpeed": 10,
+                "Enable": 1,
+                "ColorArr": json.dumps(color_arr),
+            }
+
+        _LOGGER.debug(
+            "AigoSmart aquarium light turn_on for %s: %s",
+            self._iot_id, items,
+        )
+
         self.async_write_ha_state()
         self._coordinator.async_set_optimistic_props(self._iot_id, items, hold_duration=12.0)
         if self._commander is not None:
@@ -447,11 +525,11 @@ class AigoSmartAquariumLight(AigoSmartLight):
                     self._coordinator.client.set_properties, self._iot_id, items
                 )
             except Exception as exc:
-                _LOGGER.warning("AigoSmart turn_on failed for %s: %s", self._iot_id, exc)
+                _LOGGER.warning("AigoSmart aquarium light turn_on failed for %s: %s", self._iot_id, exc)
                 self._revert(prev)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs, self._attr_effect)
         self._is_on = False
         self.async_write_ha_state()
         self._coordinator.async_set_optimistic_props(
@@ -465,11 +543,11 @@ class AigoSmartAquariumLight(AigoSmartLight):
                     self._iot_id, {self._prop_switch: 0},
                 )
             except Exception as exc:
-                _LOGGER.warning("AigoSmart turn_off failed for %s: %s", self._iot_id, exc)
+                _LOGGER.warning("AigoSmart aquarium light turn_off failed for %s: %s", self._iot_id, exc)
                 self._revert(prev)
 
     def _revert(self, prev: tuple) -> None:
         """Restore pre-command state after a failed write."""
-        self._is_on, self._brightness, self._color_temp_k, self._hs = prev
+        self._is_on, self._brightness, self._color_temp_k, self._hs, self._attr_effect = prev
         self._coordinator.clear_optimistic_props(self._iot_id)
         self.async_write_ha_state()

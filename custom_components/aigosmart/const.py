@@ -102,6 +102,8 @@ PROP_AQUARIUM_IND_MODE = "IndMode"
 PROP_AQUARIUM_ERROR_CODE = "errorCode"
 PROP_AQUARIUM_REMIND_DURATION = "remindDuration"
 PROP_AQUARIUM_RHYTHM_ENABLE = "DeviceRhythmEnable"
+PROP_AQUARIUM_LIGHT_SCENE = "LightScene"
+PROP_AQUARIUM_LIGHT_SCENE_ID = "LightSceneID"
 
 # Enum mappings for aquarium properties
 AQUARIUM_ERROR_CODES = {
@@ -122,3 +124,13 @@ AQUARIUM_FEED_STATE = {
     1: "feeding",
     2: "completed",
 }
+
+AQUARIUM_PUMP_LEVELS = {
+    0: "Off",
+    1: "Level 1",
+    2: "Level 2",
+    3: "Level 3",
+    255: "Paused",
+}
+AQUARIUM_PUMP_LEVEL_TO_INT = {v: k for k, v in AQUARIUM_PUMP_LEVELS.items()}
+AQUARIUM_PUMP_OPTIONS = ["Off", "Level 1", "Level 2", "Level 3", "Paused"]

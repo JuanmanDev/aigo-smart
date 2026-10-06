@@ -29,7 +29,7 @@ from .discovery import DeviceRegistry, load_pk_catalog
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.LIGHT, Platform.SWITCH, Platform.CLIMATE, Platform.FAN,
-             Platform.SENSOR, Platform.NUMBER, Platform.WATER_HEATER]
+             Platform.SENSOR, Platform.NUMBER, Platform.WATER_HEATER, Platform.SELECT]
 SERVICE_SYNC = "sync_devices"
 SERVICE_DISCOVER_LOCAL = "discover_local"
 SERVICE_ADD_DEVICE = "add_device"
