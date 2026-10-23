@@ -10,9 +10,11 @@ Autodiscovery layer 1 (cloud):
 
 Online-state handling:
   listBindingByAccount's "status" is not a reliable online flag (an online
-  device can report 3). When a device reports non-ONLINE there, we confirm
-  via /thing/status/get (as the app does) and cache the verdict. A device
-  stays available while properties keep flowing in.
+  device can report 3) and is only refreshed every DEVICE_LIST_EVERY polls.
+  /thing/status/get (as the app uses) is the authority: it is queried for
+  every device on every poll. The cloud keeps serving the last property
+  shadow for an unpowered device (e.g. a light cut at the wall switch), so
+  property polls alone can never reveal that a device went offline.
 """
 from __future__ import annotations
 
@@ -45,9 +47,12 @@ _LOGGER = logging.getLogger(__name__)
 POLL_INTERVAL = 30           # seconds
 DEVICE_LIST_EVERY = 10       # refresh device list every Nth poll (10*30s = 5 min)
 # Re-verify online status via /thing/status/get at most this often per device
-STATUS_RECHECK_COOLDOWN = 60
+# (just under POLL_INTERVAL so every regular poll re-checks)
+STATUS_RECHECK_COOLDOWN = POLL_INTERVAL - 5
 # Consecutive property-poll failures after which a device is marked offline
 PROP_FAIL_OFFLINE_THRESHOLD = 2
+# Consecutive /thing/status/get failures after which a device is marked offline
+STATUS_FAIL_OFFLINE_THRESHOLD = 2
 
 EVENT_DEVICES_CHANGED = "aigosmart_devices_changed"
 
@@ -80,6 +85,8 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         self._online_cache: dict[str, tuple[bool, float]] = {}
         # iotId -> consecutive property-poll failure count
         self._prop_fail_count: dict[str, int] = {}
+        # iotId -> consecutive /thing/status/get failure count
+        self._status_fail_count: dict[str, int] = {}
         # Last full re-login attempt (session-expiry self-healing)
         self._last_relogin_attempt: float = 0.0
 
@@ -127,17 +134,19 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
     def _resolve_online(self, dev: dict) -> bool:
         """Determine whether a device is online.
 
-        listBindingByAccount "status" equals 1 (ONLINE) → online.
-        Any other value is ambiguous for some accounts/firmwares (an online
-        device can report 3), so confirm once with /thing/status/get and
-        cache the verdict for STATUS_RECHECK_COOLDOWN seconds.
+        /thing/status/get is authoritative and is re-queried once the cached
+        verdict is older than STATUS_RECHECK_COOLDOWN. The listBinding
+        "status" is never trusted on its own: it is stale between device-list
+        refreshes and an online device can report 3 there. It is only used
+        as a fallback when there is no verdict yet and the status query fails.
+
+        The raw device dict is never modified — writing the verdict back into
+        dev["status"] previously turned it into a self-confirming "online"
+        flag, so a device that lost power stayed available until restart.
         """
         iot_id = dev.get("iotId", "")
         if not iot_id:
             return False
-        if _is_status_online(dev.get("status")):
-            self._online_cache[iot_id] = (True, time.time())
-            return True
 
         now = time.time()
         cached = self._online_cache.get(iot_id)
@@ -147,11 +156,23 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             status_data = self.client.get_status(iot_id)
             online = _is_status_online(status_data.get("status"))
+            self._status_fail_count[iot_id] = 0
         except Exception as exc:
-            _LOGGER.debug("Status verification failed for %s: %s", iot_id, exc)
-            # The device didn't answer the status query — treat as offline
-            # (never keep a stale True verdict from a previous check).
-            online = False
+            fails = self._status_fail_count.get(iot_id, 0) + 1
+            self._status_fail_count[iot_id] = fails
+            _LOGGER.debug("Status verification failed (%d) for %s: %s",
+                          fails, iot_id, exc)
+            if fails >= STATUS_FAIL_OFFLINE_THRESHOLD:
+                online = False
+            elif cached:
+                # One transient API hiccup must not flap the entity
+                online = cached[0]
+            else:
+                online = _is_status_online(dev.get("status"))
+        if cached and cached[0] != online:
+            _LOGGER.info("AigoSmart device %s (%s) is now %s", iot_id,
+                         dev.get("nickName") or dev.get("deviceName") or "?",
+                         "online" if online else "offline")
         self._online_cache[iot_id] = (online, now)
         return online
 
@@ -249,19 +270,25 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
             self._poll_count += 1
             devices = self.data.get("devices", [])
 
-        # Resolve online state for every device (cheap when status==1;
-        # verified via /thing/status/get only when ambiguous)
+        # Resolve online state for every device via /thing/status/get
+        online_ids: set[str] = set()
         for dev in devices:
             iot_id = dev.get("iotId")
-            if iot_id:
-                online = await self.hass.async_add_executor_job(
-                    self._resolve_online, dev)
-                dev["status"] = STATUS_ONLINE if online else dev.get("status", 3)
+            if iot_id and await self.hass.async_add_executor_job(
+                    self._resolve_online, dev):
+                online_ids.add(iot_id)
 
         props: dict[str, dict] = {}
         for dev in devices:
             iot_id = dev.get("iotId")
             if not iot_id:
+                continue
+            if iot_id not in online_ids:
+                # Offline: the cloud would only return the stale shadow from
+                # before the device lost power — keep what we have and drop
+                # optimistic holds so nothing is "settling" on reconnect.
+                self._optimistic_locks.pop(iot_id, None)
+                props[iot_id] = dict(self.data.get("props", {}).get(iot_id, {}))
                 continue
             try:
                 cloud_props = await self.hass.async_add_executor_job(

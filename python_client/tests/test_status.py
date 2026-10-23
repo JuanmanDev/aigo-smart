@@ -10,10 +10,13 @@ verifies via /thing/status/get (apiVer 1.0.5) which returns
 {"status": 1} for online devices.
 
 Coordinator policy tested here:
-  * status 1 from the list -> online, no verification call
-  * ambiguous status (3 etc.) -> verified via /thing/status/get
-  * verified online stays cached for the cooldown window
+  * /thing/status/get is authoritative, re-queried every poll
+  * the list status is never trusted alone (stale between list refreshes)
+  * verified state stays cached for the cooldown window
+  * a device that goes offline after being online is detected (regression:
+    lights cut at the wall switch stayed "on" in HA until restart)
 """
+import asyncio
 import os
 import sys
 import unittest
@@ -88,11 +91,37 @@ class TestCoordinatorOnlineResolution(unittest.TestCase):
         self.coordinator = AigoDataUpdateCoordinator(mock.MagicMock(), mock.MagicMock())
         self.dev = {"iotId": "iot1", "status": 3}
 
-    def test_status_one_is_online_without_verification(self):
+    def test_list_status_one_is_still_verified(self):
+        """listBinding status 1 can be stale: the device may be off already."""
         dev = {"iotId": "iot1", "status": 1}
-        self.assertTrue(self.coordinator._resolve_online(dev))
-        # no /thing/status/get call needed
-        self.coordinator.client.get_status.assert_not_called()
+        self.coordinator.client.get_status.return_value = {"status": 3}
+        self.assertFalse(self.coordinator._resolve_online(dev))
+        self.coordinator.client.get_status.assert_called_once_with("iot1")
+
+    def test_resolve_does_not_mutate_device_dict(self):
+        self.coordinator.client.get_status.return_value = {"status": 1}
+        self.coordinator._resolve_online(self.dev)
+        self.assertEqual(self.dev["status"], 3)
+
+    def test_online_device_going_offline_is_detected(self):
+        """The reported bug: light powered off at the wall stayed online."""
+        self.coordinator.client.get_status.return_value = {"status": 1}
+        self.assertTrue(self.coordinator._resolve_online(self.dev))
+        # power cut; cooldown expires
+        self.coordinator._online_cache["iot1"] = (True, 0)
+        self.coordinator.client.get_status.return_value = {"status": 3}
+        self.assertFalse(self.coordinator._resolve_online(self.dev))
+        self.assertFalse(self.coordinator.is_device_online("iot1"))
+
+    def test_single_status_failure_keeps_previous_verdict(self):
+        self.coordinator.client.get_status.return_value = {"status": 1}
+        self.coordinator._resolve_online(self.dev)
+        self.coordinator._online_cache["iot1"] = (True, 0)
+        self.coordinator.client.get_status.side_effect = OSError("timeout")
+        self.assertTrue(self.coordinator._resolve_online(self.dev))
+        self.coordinator._online_cache["iot1"] = (True, 0)
+        # second consecutive failure -> offline
+        self.assertFalse(self.coordinator._resolve_online(self.dev))
 
     def test_ambiguous_status_verified_online(self):
         """The reported bug: online device with listBinding status=3."""
@@ -115,6 +144,55 @@ class TestCoordinatorOnlineResolution(unittest.TestCase):
         # Before the first poll resolves a device, it must not flash
         # unavailable (entity was just created from the device list)
         self.assertTrue(self.coordinator.is_device_online("never_seen"))
+
+
+class TestPollCycleOfflineDetection(unittest.TestCase):
+    """Full poll cycles: online -> unpowered must flip to unavailable."""
+
+    def setUp(self):
+        hass = mock.MagicMock()
+
+        async def run(func, *args):
+            return func(*args)
+
+        hass.async_add_executor_job = run
+        self.coordinator = AigoDataUpdateCoordinator(hass, mock.MagicMock())
+        client = self.coordinator.client
+        client.list_devices.return_value = [{"iotId": "iot1", "status": 3}]
+        client.get_properties.return_value = {"LightSwitch": 1}
+
+    def poll(self):
+        self.coordinator.data = asyncio.run(self.coordinator._async_update_data())
+        # let the cooldown lapse before the next poll
+        for iot_id, (online, _) in list(self.coordinator._online_cache.items()):
+            self.coordinator._online_cache[iot_id] = (online, 0)
+
+    def test_offline_detected_between_list_refreshes(self):
+        client = self.coordinator.client
+        client.get_status.return_value = {"status": 1}
+        self.poll()
+        self.poll()
+        self.assertTrue(self.coordinator.is_device_online("iot1"))
+        # wall switch off: cloud shadow still says LightSwitch=1
+        client.get_status.return_value = {"status": 3}
+        self.poll()
+        self.assertFalse(self.coordinator.is_device_online("iot1"))
+        # list refresh (status 3) after many polls must not revive it
+        for _ in range(12):
+            self.poll()
+        self.assertFalse(self.coordinator.is_device_online("iot1"))
+        # power restored
+        client.get_status.return_value = {"status": 1}
+        client.get_properties.return_value = {"LightSwitch": 0}
+        self.poll()
+        self.assertTrue(self.coordinator.is_device_online("iot1"))
+        self.assertEqual(self.coordinator.props["iot1"]["LightSwitch"], 0)
+
+    def test_offline_device_skips_stale_property_poll(self):
+        client = self.coordinator.client
+        client.get_status.return_value = {"status": 3}
+        self.poll()
+        client.get_properties.assert_not_called()
 
 
 class TestLocalFirstInitRegression(unittest.TestCase):

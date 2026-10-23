@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.2] - 2026-10-23
+
+### Fixed
+
+- Devices powered off at a wall switch (no smart switch involved) stayed "available" in Home Assistant with their last state (e.g. light shown ON) until HA was restarted. Once a device had been seen online, the coordinator wrote `status = 1` back into its cached device list and then trusted that value on every following poll, so `/thing/status/get` was never asked again. The cloud keeps serving the last property shadow for an unpowered device, so property polls could not catch it either.
+  - Online state now comes from `/thing/status/get` on every poll (~30 s). The listBinding `status` is only a fallback.
+  - Offline devices become unavailable within about one poll after the cloud marks them offline. The stale cloud shadow is no longer polled for them.
+  - A single failed status query keeps the previous verdict; two in a row mark the device offline.
+  - Online/offline transitions are logged at INFO level.
+
 ## [0.5.0] - 2026-10-05
 
 ### Added
