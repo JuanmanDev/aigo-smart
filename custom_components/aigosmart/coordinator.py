@@ -56,8 +56,6 @@ STATUS_FAIL_OFFLINE_THRESHOLD = 2
 
 EVENT_DEVICES_CHANGED = "aigosmart_devices_changed"
 
-RELOGIN_COOLDOWN = 300       # min seconds between full re-login attempts
-
 
 class AigoDataUpdateCoordinator(DataUpdateCoordinator):
     """Coordinator for all AigoSmart devices of a config entry."""
@@ -87,8 +85,6 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         self._prop_fail_count: dict[str, int] = {}
         # iotId -> consecutive /thing/status/get failure count
         self._status_fail_count: dict[str, int] = {}
-        # Last full re-login attempt (session-expiry self-healing)
-        self._last_relogin_attempt: float = 0.0
 
     @property
     def devices(self) -> list[dict]:
@@ -112,24 +108,6 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         self._online_cache[iot_id] = (False, time.time())
         self._optimistic_locks.pop(iot_id, None)
         self.async_update_listeners()
-
-    def _is_session_error(self, exc: Exception) -> bool:
-        """True when an API error means the iotToken/session expired."""
-        msg = str(exc).lower()
-        return any(k in msg for k in ("session", "token", "expired", "unauthorized",
-                                       "401", "403", "not logged in"))
-
-    def _handle_session_expiry(self, exc: Exception) -> None:
-        """Try a full re-login with the stored credentials (once per failure burst)."""
-        now = time.time()
-        if now - self._last_relogin_attempt < RELOGIN_COOLDOWN:
-            raise UpdateFailed(f"AigoSmart session expired: {exc}") from exc
-        self._last_relogin_attempt = now
-        _LOGGER.warning("AigoSmart session appears expired — attempting re-login")
-        try:
-            self.client.login()
-        except Exception as login_exc:
-            raise UpdateFailed(f"AigoSmart re-login failed: {login_exc}") from exc
 
     def _resolve_online(self, dev: dict) -> bool:
         """Determine whether a device is online.
@@ -252,19 +230,14 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         return self.tsl_models[product_key]
 
     async def _async_update_data(self) -> dict:
-        # Full device list every Nth poll, else properties only
+        # Full device list every Nth poll, else properties only.
+        # Session expiry is healed inside the client (re-login + retry).
         if self._poll_count % DEVICE_LIST_EVERY == 0:
             try:
                 devices = await self.hass.async_add_executor_job(
                     self.client.list_devices)
             except Exception as exc:
-                if self._is_session_error(exc):
-                    await self.hass.async_add_executor_job(
-                        self._handle_session_expiry, exc)
-                    devices = await self.hass.async_add_executor_job(
-                        self.client.list_devices)
-                else:
-                    raise
+                raise UpdateFailed(f"AigoSmart device list failed: {exc}") from exc
             self._poll_count += 1
         else:
             self._poll_count += 1

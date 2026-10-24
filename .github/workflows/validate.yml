@@ -34,4 +34,4 @@ jobs:
                  python_client.tests.test_commander \
                  python_client.tests.test_coordinator_cache \
                  python_client.tests.test_light_state \
-                 python_client.tests.test_status -v
+                 python_client.tests.test_status \n                 python_client.tests.test_session -v

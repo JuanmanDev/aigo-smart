@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.3] - 2026-10-24
+
+### Fixed
+
+- Slow recovery when the cloud session is invalidated. The cloud allows one session per account, so a login from the phone app or another client logs Home Assistant out. Before, HA only noticed on the 5-minute device-list refresh and then waited up to 300 s between re-login attempts, so every entity stayed unavailable for minutes. Status calls failing with `identityId is blank` (code 29003) were not recognized as session errors at all.
+  - Every cloud call (polls, status checks, commands) now re-logs in and retries once on a session error, so HA recovers on the next call.
+  - Session errors are detected by Aliyun error code (401, 403, 2401, 29003) as well as by message.
+  - Re-login is serialized across threads and runs at most once per 10 s. Failed logins back off from 30 s up to 10 min.
+
 ## [0.6.2] - 2026-10-23
 
 ### Fixed
