@@ -21,7 +21,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
 from . import config_validation as cv
-from .api import AigoSmartApiClient, NeedSecurityCodeError
+from .api import AigoSmartApiClient, InvalidCredentialsError, NeedSecurityCodeError
 from .const import CONF_SECURITY_CODE, DOMAIN
 from .coordinator import AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry, load_pk_catalog
@@ -54,6 +54,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.async_add_executor_job(client.login)
     except NeedSecurityCodeError as exc:
         raise ConfigEntryAuthFailed("Security code required — re-authenticate") from exc
+    except InvalidCredentialsError as exc:
+        raise ConfigEntryAuthFailed(f"Login rejected — re-authenticate: {exc}") from exc
     except Exception as exc:
         raise ConfigEntryNotReady(f"Login failed: {exc}") from exc
 

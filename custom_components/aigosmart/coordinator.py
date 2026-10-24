@@ -25,6 +25,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import AigoSmartApiClient
@@ -229,7 +230,16 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
             self.tsl_models[product_key] = {}
         return self.tsl_models[product_key]
 
+    def _raise_if_auth_failed(self) -> None:
+        """Hand a refused re-login to HA's re-authentication flow."""
+        failure = getattr(self.client, "auth_failed", None)
+        if isinstance(failure, Exception):
+            raise ConfigEntryAuthFailed(
+                f"AigoSmart login refused, re-authentication required: {failure}"
+            ) from failure
+
     async def _async_update_data(self) -> dict:
+        self._raise_if_auth_failed()
         # Full device list every Nth poll, else properties only.
         # Session expiry is healed inside the client (re-login + retry).
         if self._poll_count % DEVICE_LIST_EVERY == 0:
@@ -237,6 +247,7 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
                 devices = await self.hass.async_add_executor_job(
                     self.client.list_devices)
             except Exception as exc:
+                self._raise_if_auth_failed()
                 raise UpdateFailed(f"AigoSmart device list failed: {exc}") from exc
             self._poll_count += 1
         else:
@@ -279,6 +290,9 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
                     self._online_cache[iot_id] = (False, time.time())
                     self._optimistic_locks.pop(iot_id, None)
                 props[iot_id] = self._merge_props(iot_id, {})
+
+        # A per-device call may have hit the refused re-login
+        self._raise_if_auth_failed()
 
         old_ids = {d.get("iotId") for d in self.data.get("devices", [])}
         new_ids = {d.get("iotId") for d in devices} - old_ids

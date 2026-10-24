@@ -44,6 +44,14 @@ class MockDataUpdateCoordinator:
 sys.modules["homeassistant.helpers.update_coordinator"].DataUpdateCoordinator = MockDataUpdateCoordinator
 sys.modules["homeassistant.helpers.update_coordinator"].UpdateFailed = Exception
 
+
+class ConfigEntryAuthFailed(Exception):
+    pass
+
+
+sys.modules.setdefault("homeassistant.exceptions", mock.MagicMock())
+sys.modules["homeassistant.exceptions"].ConfigEntryAuthFailed = ConfigEntryAuthFailed
+
 import importlib.util
 spec = importlib.util.spec_from_file_location(
     "custom_components.aigosmart.const",
@@ -187,6 +195,12 @@ class TestPollCycleOfflineDetection(unittest.TestCase):
         self.poll()
         self.assertTrue(self.coordinator.is_device_online("iot1"))
         self.assertEqual(self.coordinator.props["iot1"]["LightSwitch"], 0)
+
+    def test_refused_relogin_raises_reauth(self):
+        """Client gave up logging in -> HA must start re-authentication."""
+        self.coordinator.client.auth_failed = Exception("security code required")
+        with self.assertRaises(ConfigEntryAuthFailed):
+            asyncio.run(self.coordinator._async_update_data())
 
     def test_offline_device_skips_stale_property_poll(self):
         client = self.coordinator.client

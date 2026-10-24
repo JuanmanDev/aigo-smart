@@ -12,6 +12,9 @@ Policy tested here:
   * non-session errors propagate untouched (no login)
   * concurrent failures on the same stale token log in only once
   * failed logins back off; successful ones reset the backoff
+  * a refused re-login (needs email code / wrong password) sets auth_failed
+    and stops all further login attempts until HA re-authenticates
+  * the cloud client classifies UC 4xx rejections as InvalidCredentialsError
 """
 import importlib.util
 import os
@@ -32,6 +35,10 @@ class AigoApiError(Exception):
 
 
 class NeedSecurityCodeError(Exception):
+    pass
+
+
+class InvalidCredentialsError(AigoApiError):
     pass
 
 
@@ -56,6 +63,7 @@ def _load_api():
     lib.AigoApiError = AigoApiError
     lib.AigoCloudClient = FakeCloud
     lib.NeedSecurityCodeError = NeedSecurityCodeError
+    lib.InvalidCredentialsError = InvalidCredentialsError
     lib.AlcsDevice = object
     lib.discover_alcs_devices = lambda *a, **k: []
     lib_local = types.ModuleType(f"{_PKG}.lib.local")
@@ -170,6 +178,82 @@ class TestRelogin(unittest.TestCase):
         with self.assertRaises(NeedSecurityCodeError):
             self.client.list_devices()
         self.assertEqual(self.cloud.logins, 0)
+
+
+class TestRefusedRelogin(unittest.TestCase):
+    def setUp(self):
+        self.client = api.AigoSmartApiClient("user@example.com", "pw")
+        self.cloud = self.client._client
+        self.cloud.get_status.side_effect = SESSION_ERR
+
+    def _refuse(self, exc):
+        with mock.patch.object(self.cloud, "login", side_effect=exc) as login:
+            with self.assertRaises(type(exc)):
+                self.client.get_status("iot1")
+            self.assertIs(self.client.auth_failed, exc)
+            # later calls: no new login (no code-email spam / lockout)
+            self.client._last_relogin = float("-inf")
+            with self.assertRaises(type(exc)):
+                self.client.get_status("iot1")
+            self.assertEqual(login.call_count, 1)
+
+    def test_need_security_code_sets_auth_failed(self):
+        self._refuse(NeedSecurityCodeError("security code required"))
+
+    def test_invalid_credentials_sets_auth_failed(self):
+        self._refuse(InvalidCredentialsError("UC login rejected: bad password"))
+
+    def test_network_failure_does_not_set_auth_failed(self):
+        with mock.patch.object(self.cloud, "login", side_effect=OSError("down")):
+            with self.assertRaises(OSError):
+                self.client.get_status("iot1")
+        self.assertIsNone(self.client.auth_failed)
+
+
+class TestCloudLoginClassification(unittest.TestCase):
+    """UC login error mapping in the real cloud client (python_client copy)."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from aigosmart import cloud
+        cls.cloud = cloud
+
+    def _uc_error(self, status, body):
+        import io
+        import json
+        import urllib.error
+        err = urllib.error.HTTPError("https://uc", status, "err", {},
+                                     io.BytesIO(json.dumps(body).encode()))
+        client = self.cloud.AigoCloudClient()
+        with mock.patch.object(self.cloud.urllib.request, "urlopen", side_effect=err),                 mock.patch.object(self.cloud, "encrypt_password", return_value="x"):
+            client.uc_login("user@example.com", "pw")
+
+    def test_need_code(self):
+        with self.assertRaises(self.cloud.NeedSecurityCodeError):
+            self._uc_error(400, {"code": "UC/NEED_SECURITY_CODE", "message": "need code"})
+
+    def test_wrong_password_is_invalid_credentials(self):
+        with self.assertRaises(self.cloud.InvalidCredentialsError) as ctx:
+            self._uc_error(400, {"error": "invalid_grant",
+                                 "error_description": "Bad credentials password"})
+        self.assertFalse(ctx.exception.is_code_error)
+
+    def test_wrong_code_is_code_error(self):
+        with self.assertRaises(self.cloud.InvalidCredentialsError) as ctx:
+            self._uc_error(400, {"code": "UC/SECURITY_CODE_ERROR",
+                                 "message": "security code is invalid"})
+        self.assertTrue(ctx.exception.is_code_error)
+
+    def test_server_error_is_generic(self):
+        with self.assertRaises(self.cloud.AigoApiError) as ctx:
+            self._uc_error(503, {"message": "unavailable"})
+        self.assertNotIsInstance(ctx.exception, self.cloud.InvalidCredentialsError)
+
+    def test_rate_limit_is_generic(self):
+        with self.assertRaises(self.cloud.AigoApiError) as ctx:
+            self._uc_error(429, {"message": "too many requests"})
+        self.assertNotIsInstance(ctx.exception, self.cloud.InvalidCredentialsError)
 
 
 if __name__ == "__main__":

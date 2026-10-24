@@ -16,12 +16,18 @@ See REVERSE_ENGINEERING.md for the full protocol documentation.
 
 __version__ = "0.1.0"
 
-from .cloud import AigoApiError, AigoCloudClient, NeedSecurityCodeError
+from .cloud import (
+    AigoApiError,
+    AigoCloudClient,
+    InvalidCredentialsError,
+    NeedSecurityCodeError,
+)
 from .local import AlcsDevice, discover_alcs_devices
 
 __all__ = [
     "AigoCloudClient",
     "AigoApiError",
+    "InvalidCredentialsError",
     "NeedSecurityCodeError",
     "AlcsDevice",
     "discover_alcs_devices",

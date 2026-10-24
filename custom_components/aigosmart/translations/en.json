@@ -11,9 +11,25 @@
       },
       "code": {
         "title": "Verification code",
-        "description": "A verification code was sent to your email. Enter it to continue.",
+        "description": "AigoSmart asked for an email verification code. A code was sent to {email} — enter it below. Codes expire after a few minutes; tick \"Send a new code\" and submit to get another one.",
         "data": {
-          "security_code": "Verification code"
+          "security_code": "Verification code",
+          "resend": "Send a new code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate AigoSmart",
+        "description": "The AigoSmart cloud refused the stored login for {email}. This happens when the password was changed or the server asks for a new email verification code. Enter the new password, or leave it blank to retry with the current one (a verification code will be emailed if needed).",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Change AigoSmart account",
+        "description": "Update the email or password used to log in. Leave the password blank to keep the current one.",
+        "data": {
+          "email": "Email or phone",
+          "password": "Password"
         }
       },
       "add_device": {
@@ -33,13 +49,17 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect / login failed. Check your credentials.",
-      "invalid_code": "Invalid verification code.",
+      "cannot_connect": "Could not reach the AigoSmart cloud. Check your network and try again.",
+      "invalid_auth": "Email or password is incorrect.",
+      "invalid_code": "The verification code is wrong or expired. Check the email, or tick \"Send a new code\".",
+      "code_send_failed": "The verification code email could not be requested. Tick \"Send a new code\" and submit to try again.",
       "unknown_device": "Selected device is no longer visible.",
       "provision_failed": "Provisioning failed. Make sure the device is still in pairing mode and near the Bluetooth adapter/proxy, then try again."
     },
     "abort": {
       "already_configured": "This account is already configured.",
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "The account was updated.",
       "not_loaded": "The AigoSmart integration must be set up first.",
       "no_devices_found": "No Aigostar devices in pairing mode were found. Hold the device's power button for ~5 seconds and try again."
     }

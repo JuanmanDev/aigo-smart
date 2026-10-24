@@ -42,6 +42,22 @@ class AigoApiError(Exception):
         self.response = response
 
 
+class InvalidCredentialsError(AigoApiError):
+    """UC login rejected the account/password (or the verification code).
+
+    Raised only for an explicit 4xx answer from the login server — network
+    failures and 5xx stay plain AigoApiError, so callers can tell "retry
+    later" apart from "the user must fix the credentials".
+    """
+
+    @property
+    def is_code_error(self) -> bool:
+        """True when the rejection is about the verification code."""
+        rsp = self.response or {}
+        text = f"{rsp.get('code', '')} {rsp.get('message', '')} "                f"{rsp.get('error', '')} {rsp.get('error_description', '')}".lower()
+        return "code" in text and "password" not in text
+
+
 # ---------------------------------------------------------------------------
 # UC signature helpers
 # ---------------------------------------------------------------------------
@@ -217,6 +233,11 @@ class AigoCloudClient:
                 raise AigoApiError(f"UC login HTTP {exc.code}: {raw[:300]!r}") from exc
             if err.get("code") == "UC/NEED_SECURITY_CODE":
                 raise NeedSecurityCodeError(err.get("message", "security code required"))
+            if 400 <= exc.code < 500 and exc.code != 429:
+                raise InvalidCredentialsError(
+                    f"UC login rejected: {err.get('error_description') or err.get('message') or err}",
+                    response=err,
+                ) from exc
             raise AigoApiError(
                 f"UC login failed: {err.get('error_description', err)}", response=err
             ) from exc

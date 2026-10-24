@@ -117,8 +117,10 @@ Or manually:
 1. **Settings → Devices & Services → Add Integration**
 2. Search for **AigoSmart (unofficial)**
 3. Enter your AigoSmart app email and password
-4. If the server requests a verification code, it's sent to your email automatically — just type it in
+4. If the server requests a verification code, it's sent to your email automatically — just type it in (tick **Send a new code** if it expired)
 5. All devices bound to your account appear automatically
+
+To change the account email or password later, open the integration and choose **Reconfigure**.
 
 <p align="center">
   <img src="screenshots/add.jpeg" width="340" alt="Config-flow login dialog — enter your AigoSmart email and password">
@@ -216,6 +218,7 @@ productKey → category catalog extracted from the APK, including:
 ## Troubleshooting
 
 - **Login fails** — use the exact credentials that work in the AigoSmart app; check the verification-code email (including spam).
+- **"Re-authentication required"** — the cloud refused the stored login (password changed, or the server wants a new verification code). Click **Re-authenticate** on the notification, leave the password blank to keep it, and enter the code emailed to you if asked. Short session drops (e.g. logging into the phone app) are recovered automatically and don't need this.
 - **Devices unavailable** — the device must be online in the AigoSmart app first.
 - **Changes in the app not reflected in HA** — HA re-reads the cloud shadow every 30 s, so external changes appear within ~30 s. Availability uses `/thing/status/get`, because the device-list `status` field is unreliable.
 - **New device not appearing** — wait ≤ 5 minutes for autodiscovery, or call `aigosmart.sync_devices`.

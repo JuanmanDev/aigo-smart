@@ -9,6 +9,11 @@ Flow (config flow steps):
   1. scan      — list pairing-mode devices (FEB3 + Breeze scan record)
   2. wifi      — ask for SSID/password for the selected device
   3. provision — BLE provision + cloud bind, then reload the coordinator
+
+Account login (user / reauth / reconfigure) shares one path: when the login
+server answers UC/NEED_SECURITY_CODE a code email is sent and the `code`
+step asks for it (with a "resend" option). The code is single-use and is
+never stored — once verified, the server trusts this client's fixed cuid.
 """
 from __future__ import annotations
 
@@ -21,19 +26,37 @@ from homeassistant.components import bluetooth
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
-from .api import AigoSmartApiClient, NeedSecurityCodeError
+from .api import AigoSmartApiClient, InvalidCredentialsError, NeedSecurityCodeError
 from .const import CONF_SECURITY_CODE, CONF_SSID, CONF_WIFI_PASSWORD, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_RESEND = "resend"
+# Sentinel from _async_try_login: the server wants an email code
+NEED_CODE = "need_code"
+
+_PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+_EMAIL_SELECTOR = TextSelector(TextSelectorConfig(autocomplete="username"))
+
 STEP_USER_SCHEMA = vol.Schema({
-    vol.Required(CONF_EMAIL): str,
-    vol.Required(CONF_PASSWORD): str,
+    vol.Required(CONF_EMAIL): _EMAIL_SELECTOR,
+    vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
 })
 
 STEP_CODE_SCHEMA = vol.Schema({
-    vol.Required(CONF_SECURITY_CODE): str,
+    vol.Optional(CONF_SECURITY_CODE): str,
+    vol.Optional(CONF_RESEND, default=False): bool,
+})
+
+# Blank password keeps the stored one
+STEP_REAUTH_SCHEMA = vol.Schema({
+    vol.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
 })
 
 STEP_WIFI_SCHEMA = vol.Schema({
@@ -51,40 +74,109 @@ class AigoSmartConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._email: str = ""
         self._password: str = ""
         self._selected: dict | None = None
+        # "user" | "reauth" | "reconfigure" — decides how _finish stores the result
+        self._mode: str = "user"
+        self._code_sent: bool = False
+
+    # ------------------------------------------------------------------
+    # Account login: initial setup
+    # ------------------------------------------------------------------
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            self._email = user_input[CONF_EMAIL]
+            self._mode = "user"
+            self._email = user_input[CONF_EMAIL].strip()
             self._password = user_input[CONF_PASSWORD]
-            client = AigoSmartApiClient(self._email, self._password)
-            try:
-                await self.hass.async_add_executor_job(client.login)
-            except NeedSecurityCodeError:
-                await self._request_security_code()
-                return await self.async_step_code()
-            except Exception as exc:
-                _LOGGER.warning("AigoSmart login failed: %s", exc)
-                errors["base"] = "cannot_connect"
-            else:
-                return await self._finish()
-        return self.async_show_form(step_id="user", data_schema=STEP_USER_SCHEMA, errors=errors)
+            result = await self._async_login_step(errors)
+            if result is not None:
+                return result
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_SCHEMA, {CONF_EMAIL: self._email}),
+            errors=errors,
+        )
+
+    # ------------------------------------------------------------------
+    # Account login: re-authentication (started by HA on ConfigEntryAuthFailed)
+    # ------------------------------------------------------------------
+
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
+        self._mode = "reauth"
+        self._email = entry_data[CONF_EMAIL]
+        self._password = entry_data[CONF_PASSWORD]
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if user_input.get(CONF_PASSWORD):
+                self._password = user_input[CONF_PASSWORD]
+            result = await self._async_login_step(errors)
+            if result is not None:
+                return result
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=STEP_REAUTH_SCHEMA,
+            errors=errors,
+            description_placeholders={"email": self._email},
+        )
+
+    # ------------------------------------------------------------------
+    # Account login: reconfigure (change email/password from the UI)
+    # ------------------------------------------------------------------
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._mode = "reconfigure"
+            self._email = user_input[CONF_EMAIL].strip()
+            self._password = user_input.get(CONF_PASSWORD) or entry.data[CONF_PASSWORD]
+            result = await self._async_login_step(errors)
+            if result is not None:
+                return result
+        schema = vol.Schema({
+            vol.Required(CONF_EMAIL): _EMAIL_SELECTOR,
+            vol.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
+        })
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                schema, {CONF_EMAIL: self._email or entry.data[CONF_EMAIL]}),
+            errors=errors,
+        )
+
+    # ------------------------------------------------------------------
+    # Account login: email verification code
+    # ------------------------------------------------------------------
 
     async def async_step_code(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            client = AigoSmartApiClient(
-                self._email, self._password, security_code=user_input[CONF_SECURITY_CODE])
-            try:
-                await self.hass.async_add_executor_job(client.login)
-            except NeedSecurityCodeError:
+            code = "".join((user_input.get(CONF_SECURITY_CODE) or "").split())
+            if user_input.get(CONF_RESEND):
+                self._code_sent = await self._request_security_code()
+            elif not code:
                 errors["base"] = "invalid_code"
-            except Exception as exc:
-                _LOGGER.warning("AigoSmart code login failed: %s", exc)
-                errors["base"] = "cannot_connect"
             else:
-                return await self._finish(security_code=user_input[CONF_SECURITY_CODE])
-        return self.async_show_form(step_id="code", data_schema=STEP_CODE_SCHEMA, errors=errors)
+                error = await self._async_try_login(code)
+                if error is None:
+                    return await self._finish()
+                errors["base"] = "invalid_code" if error == NEED_CODE else error
+        if not self._code_sent and "base" not in errors:
+            errors["base"] = "code_send_failed"
+        return self.async_show_form(
+            step_id="code",
+            data_schema=STEP_CODE_SCHEMA,
+            errors=errors,
+            description_placeholders={"email": self._email},
+        )
 
     # ------------------------------------------------------------------
     # Add Device: step 1 — scan
@@ -198,7 +290,34 @@ class AigoSmartConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # helpers
     # ------------------------------------------------------------------
 
-    async def _request_security_code(self) -> None:
+    async def _async_try_login(self, code: str = "") -> str | None:
+        """Log in with the flow's credentials; None on success, else an error key."""
+        client = AigoSmartApiClient(self._email, self._password, security_code=code)
+        try:
+            await self.hass.async_add_executor_job(client.login)
+        except NeedSecurityCodeError:
+            return NEED_CODE
+        except InvalidCredentialsError as exc:
+            _LOGGER.info("AigoSmart login rejected: %s", exc)
+            return "invalid_code" if code and exc.is_code_error else "invalid_auth"
+        except Exception as exc:
+            _LOGGER.warning("AigoSmart login failed: %s", exc)
+            return "cannot_connect"
+        return None
+
+    async def _async_login_step(self, errors: dict[str, str]) -> FlowResult | None:
+        """Shared submit handler: finish, go to the code step, or fill errors."""
+        error = await self._async_try_login()
+        if error is None:
+            return await self._finish()
+        if error == NEED_CODE:
+            self._code_sent = await self._request_security_code()
+            return await self.async_step_code()
+        errors["base"] = error
+        return None
+
+    async def _request_security_code(self) -> bool:
+        """Ask the server to email a login code. True when the request was accepted."""
         import json
         import urllib.request
 
@@ -216,24 +335,33 @@ class AigoSmartConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         headers = {"Content-Type": const.CONTENT_TYPE}
         headers.update(_uc_headers("POST", url))
 
-        def _send() -> None:
+        def _send() -> bool:
             req = urllib.request.Request(
                 url, data=json.dumps(body).encode(), headers=headers, method="POST")
             try:
-                urllib.request.urlopen(req, timeout=15)
+                with urllib.request.urlopen(req, timeout=15):
+                    return True
             except Exception as exc:
-                # best-effort: the login flow still shows the code step
-                _LOGGER.debug("Auto-send of verification code failed: %s", exc)
+                # the code step is still shown, with a "resend" option
+                _LOGGER.warning("Sending the AigoSmart verification code failed: %s", exc)
+                return False
 
-        await self.hass.async_add_executor_job(_send)
+        return await self.hass.async_add_executor_job(_send)
 
-    async def _finish(self, security_code: str = "") -> FlowResult:
+    async def _finish(self) -> FlowResult:
+        # The verification code is single-use: never persist it (a stale code
+        # sent on a later re-login could make the server reject that login).
+        data = {CONF_EMAIL: self._email, CONF_PASSWORD: self._password}
+        title = f"AigoSmart ({self._email})"
+        if self._mode == "reauth":
+            return self.async_update_reload_and_abort(
+                self._get_reauth_entry(), data=data)
+        if self._mode == "reconfigure":
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(), title=title, data=data)
         await self.async_set_unique_id("aigosmart_account")
         self._abort_if_unique_id_configured()
-        data = {CONF_EMAIL: self._email, CONF_PASSWORD: self._password}
-        if security_code:
-            data[CONF_SECURITY_CODE] = security_code
-        return self.async_create_entry(title=f"AigoSmart ({self._email})", data=data)
+        return self.async_create_entry(title=title, data=data)
 
     @staticmethod
     @callback

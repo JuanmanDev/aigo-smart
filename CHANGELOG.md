@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0] - 2026-10-24
+
+### Added
+
+- Re-authentication flow. When the cloud refuses the stored login (password changed, or the server now asks for an email verification code), Home Assistant shows a "Re-authentication required" notification instead of leaving every entity unavailable. Leave the password blank to retry with the stored one, or enter a new one. The verification code is emailed automatically when needed.
+- Reconfigure flow to change the account email or password without removing the integration.
+- "Send a new code" option on the verification-code step, and an explicit error when the code email could not be requested.
+- Spanish translation of all setup dialogs.
+
+### Fixed
+
+- `ConfigEntryAuthFailed` at startup pointed to a re-authentication step that did not exist.
+- A refused re-login no longer retries forever: retrying with a missing code or a wrong password only sent more code emails and risked locking the account. It now stops and asks the user.
+- Wrong password, wrong or expired code, and network errors now show distinct messages (previously all "Failed to connect").
+- The single-use verification code is no longer stored in the config entry.
+
 ## [0.6.3] - 2026-10-24
 
 ### Fixed

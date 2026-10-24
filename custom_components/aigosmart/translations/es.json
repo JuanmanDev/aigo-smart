@@ -2,46 +2,66 @@
   "config": {
     "step": {
       "user": {
-        "title": "AigoSmart account (unofficial integration)",
-        "description": "Enter the email and password you use in the AigoSmart app.",
+        "title": "Cuenta AigoSmart (integración no oficial)",
+        "description": "Introduce el email y la contraseña que usas en la app AigoSmart.",
         "data": {
-          "email": "Email or phone",
-          "password": "Password"
+          "email": "Email o teléfono",
+          "password": "Contraseña"
         }
       },
       "code": {
-        "title": "Verification code",
-        "description": "A verification code was sent to your email. Enter it to continue.",
+        "title": "Código de verificación",
+        "description": "AigoSmart ha pedido un código de verificación. Se ha enviado un código a {email}; introdúcelo abajo. Los códigos caducan a los pocos minutos: marca \"Enviar un código nuevo\" y envía el formulario para recibir otro.",
         "data": {
-          "security_code": "Verification code"
+          "security_code": "Código de verificación",
+          "resend": "Enviar un código nuevo"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Volver a autenticar AigoSmart",
+        "description": "La nube de AigoSmart ha rechazado el inicio de sesión guardado para {email}. Pasa cuando se cambia la contraseña o el servidor pide un nuevo código de verificación por email. Introduce la contraseña nueva, o déjala en blanco para reintentar con la actual (si hace falta, se enviará un código por email).",
+        "data": {
+          "password": "Contraseña"
+        }
+      },
+      "reconfigure": {
+        "title": "Cambiar cuenta AigoSmart",
+        "description": "Actualiza el email o la contraseña de inicio de sesión. Deja la contraseña en blanco para mantener la actual.",
+        "data": {
+          "email": "Email o teléfono",
+          "password": "Contraseña"
         }
       },
       "add_device": {
-        "title": "Add a device",
-        "description": "Devices in pairing mode found via Bluetooth and WiFi. Put your device in pairing mode first (usually by holding its power button for 5 seconds).",
+        "title": "Añadir un dispositivo",
+        "description": "Dispositivos en modo emparejamiento encontrados por Bluetooth y WiFi. Pon primero el dispositivo en modo emparejamiento (normalmente manteniendo pulsado el botón de encendido 5 segundos).",
         "data": {
-          "discovered": "Device"
+          "discovered": "Dispositivo"
         }
       },
       "wifi": {
-        "title": "WiFi credentials",
-        "description": "Enter the WiFi network the new device should join. Provisioning happens over Bluetooth (works via ESPHome bluetooth proxy).",
+        "title": "Credenciales WiFi",
+        "description": "Introduce la red WiFi a la que debe conectarse el nuevo dispositivo. La configuración se hace por Bluetooth (funciona con el proxy Bluetooth de ESPHome).",
         "data": {
-          "ssid": "WiFi network name (SSID)",
-          "wifi_password": "WiFi password"
+          "ssid": "Nombre de la red WiFi (SSID)",
+          "wifi_password": "Contraseña WiFi"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect / login failed. Check your credentials.",
-      "invalid_code": "Invalid verification code.",
-      "unknown_device": "Selected device is no longer visible.",
-      "provision_failed": "Provisioning failed. Make sure the device is still in pairing mode and near the Bluetooth adapter/proxy, then try again."
+      "cannot_connect": "No se pudo contactar con la nube de AigoSmart. Revisa la red e inténtalo de nuevo.",
+      "invalid_auth": "El email o la contraseña no son correctos.",
+      "invalid_code": "El código de verificación es incorrecto o ha caducado. Revisa el email o marca \"Enviar un código nuevo\".",
+      "code_send_failed": "No se pudo solicitar el email con el código. Marca \"Enviar un código nuevo\" y envía el formulario para reintentarlo.",
+      "unknown_device": "El dispositivo seleccionado ya no es visible.",
+      "provision_failed": "Falló la configuración. Comprueba que el dispositivo sigue en modo emparejamiento y cerca del adaptador o proxy Bluetooth, e inténtalo de nuevo."
     },
     "abort": {
-      "already_configured": "This account is already configured.",
-      "not_loaded": "The AigoSmart integration must be set up first.",
-      "no_devices_found": "No Aigostar devices in pairing mode were found. Hold the device's power button for ~5 seconds and try again."
+      "already_configured": "Esta cuenta ya está configurada.",
+      "reauth_successful": "La reautenticación se ha completado correctamente.",
+      "reconfigure_successful": "La cuenta se ha actualizado.",
+      "not_loaded": "Primero hay que configurar la integración AigoSmart.",
+      "no_devices_found": "No se encontraron dispositivos Aigostar en modo emparejamiento. Mantén pulsado el botón de encendido unos 5 segundos e inténtalo de nuevo."
     }
   }
 }

@@ -11,6 +11,12 @@ Session self-healing:
   Every cloud call that fails with a session error triggers a full re-login
   and is retried once, so polls, status checks and commands all recover on
   the next call instead of waiting for a periodic device-list refresh.
+
+  If the re-login itself is refused (wrong password, or the server now asks
+  for an email verification code) retrying cannot help: `auth_failed` is set,
+  no further logins are attempted (they would only send more code emails or
+  lock the account), and the coordinator raises ConfigEntryAuthFailed so Home
+  Assistant starts its re-authentication flow.
 """
 from __future__ import annotations
 
@@ -19,7 +25,12 @@ import logging
 import threading
 import time
 
-from .lib import AigoApiError, AigoCloudClient, NeedSecurityCodeError  # noqa: F401
+from .lib import (  # noqa: F401
+    AigoApiError,
+    AigoCloudClient,
+    InvalidCredentialsError,
+    NeedSecurityCodeError,
+)
 from .lib.local import AlcsDevice, discover_alcs_devices  # noqa: F401
 from .local_first import LocalFirstMixin
 
@@ -56,7 +67,7 @@ def _relogin_on_session_error(func):
         token = self._client.iot_token
         try:
             return func(self, *args, **kwargs)
-        except NeedSecurityCodeError:
+        except (NeedSecurityCodeError, InvalidCredentialsError):
             raise
         except Exception as exc:
             if not is_session_error(exc):
@@ -80,6 +91,9 @@ class AigoSmartApiClient(LocalFirstMixin):
         self._relogin_backoff = 0.0
         self._relogin_blocked_until = 0.0
         self._last_relogin = float("-inf")
+        # Set when a re-login is refused; cleared only by a new client
+        # (the config entry reloads after re-authentication)
+        self.auth_failed: Exception | None = None
 
     # -- auth ---------------------------------------------------------------
 
@@ -95,6 +109,8 @@ class AigoSmartApiClient(LocalFirstMixin):
         with self._login_lock:
             if self._client.iot_token != stale_token:
                 return
+            if self.auth_failed is not None:
+                raise self.auth_failed
             now = time.monotonic()
             if (now < self._relogin_blocked_until
                     or now - self._last_relogin < RELOGIN_MIN_INTERVAL):
@@ -103,6 +119,11 @@ class AigoSmartApiClient(LocalFirstMixin):
             _LOGGER.warning("AigoSmart session invalid (%s) — re-logging in", cause)
             try:
                 self.login()
+            except (NeedSecurityCodeError, InvalidCredentialsError) as exc:
+                self.auth_failed = exc
+                _LOGGER.error("AigoSmart re-login refused (%s) — re-authentication "
+                              "required in Settings > Devices & services", exc)
+                raise
             except Exception:
                 self._relogin_backoff = min(
                     max(self._relogin_backoff * 2, RELOGIN_BACKOFF_MIN),
