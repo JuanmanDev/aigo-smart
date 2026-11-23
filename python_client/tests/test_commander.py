@@ -11,9 +11,7 @@ produces a burst of turn_on() calls. Verifies:
 import asyncio
 import os
 import sys
-import time
 import unittest
-from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..",
                                 "custom_components", "aigosmart"))

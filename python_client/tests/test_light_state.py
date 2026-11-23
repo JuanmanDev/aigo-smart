@@ -22,6 +22,7 @@ sys.modules["homeassistant.components.light"] = MagicMock()
 
 from enum import StrEnum
 
+
 class ColorMode(StrEnum):
     UNKNOWN = "unknown"
     ONOFF = "onoff"
@@ -56,6 +57,7 @@ sys.modules["homeassistant.components.light"].LightEntity = MockLightEntity
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
 
 import importlib.util
+
 spec = importlib.util.spec_from_file_location(
     "custom_components.aigosmart.light",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "custom_components", "aigosmart", "light.py"))

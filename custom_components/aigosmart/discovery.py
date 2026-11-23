@@ -10,9 +10,7 @@ Category mapping uses:
 """
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
 

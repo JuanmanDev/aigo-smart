@@ -24,7 +24,7 @@ from .const import (
     PROP_AQUARIUM_RHYTHM_ENABLE,
     PROP_FAN_BUZZER,
 )
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry, platform_for_device
 from .helpers import is_aquarium_device, is_fan_device
 from .pet import setup_pet_platform

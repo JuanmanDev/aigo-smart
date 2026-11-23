@@ -49,20 +49,16 @@ from .const import (
     PROP_AQUARIUM_LIGHT_SCENE,
     PROP_AQUARIUM_LIGHT_SCENE_ID,
     PROP_AQUARIUM_LIGHT_SWITCH,
-    PROP_BRIGHTNESS_CANDIDATES,
-    PROP_COLOR_TEMP_CANDIDATES,
     PROP_FANLIGHT_LIGHT_SWITCH,
-    PROP_HSV_CANDIDATES,
     PROP_LIGHT_BRIGHTNESS,
     PROP_LIGHT_COLOR_TEMP,
     PROP_LIGHT_MODE,
     PROP_LIGHT_SWITCH,
     PROP_MESH_BRIGHTNESS,
     PROP_MESH_COLOR_TEMP,
-    PROP_MESH_LIGHT_MODE,
     PROP_MESH_SWITCH,
 )
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry, platform_for_device
 from .helpers import (
     is_aquarium_device,
@@ -92,7 +88,6 @@ async def async_setup_entry(
     coordinator: AigoDataUpdateCoordinator = state["coordinator"]
     registry: DeviceRegistry = state["registry"]
     pk_catalog: dict = state.get("pk_catalog", {})
-    client = state["client"]
     registry.register("light")
 
     def _is_light(dev: dict) -> bool:

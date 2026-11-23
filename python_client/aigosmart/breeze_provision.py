@@ -32,12 +32,9 @@ Message framing: BreezeMessage(cmd, payload) -> PDUs written to FED5.
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import hmac
-import json
 import logging
 import struct
-from typing import Any, Callable
+from typing import Callable
 
 _LOG = logging.getLogger(__name__)
 
@@ -121,11 +118,11 @@ def tlv_parse(data: bytes) -> dict[int, bytes]:
     pos = 0
     while pos + 2 <= len(data):
         t = data[pos]
-        l = data[pos + 1]
-        if pos + 2 + l > len(data):
+        length = data[pos + 1]
+        if pos + 2 + length > len(data):
             break
-        out[t] = data[pos + 2:pos + 2 + l]
-        pos += 2 + l
+        out[t] = data[pos + 2:pos + 2 + length]
+        pos += 2 + length
     return out
 
 

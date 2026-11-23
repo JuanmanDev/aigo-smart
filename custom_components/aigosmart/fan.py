@@ -55,7 +55,7 @@ from .const import (
     PROP_FANLIGHT_FAN_MODE,
     PROP_FANLIGHT_FAN_SWITCH,
 )
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry, platform_for_device
 from .helpers import is_fan_device, is_fan_light_device
 

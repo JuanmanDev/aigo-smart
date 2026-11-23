@@ -20,8 +20,6 @@ import threading
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .api import AigoSmartApiClient
-
 _LOGGER = logging.getLogger(__name__)
 
 SIGNAL_ALCS_DEVICE_FOUND = "aigosmart_alcs_device_found"
@@ -63,7 +61,10 @@ class AlcsListener:
 
         from .lib import const
         from .lib.local import (
-            COAP_NON_CONFIRMABLE, CODE_POST, build_coap, alink_request, parse_coap,
+            COAP_NON_CONFIRMABLE,
+            CODE_POST,
+            alink_request,
+            build_coap,
         )
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

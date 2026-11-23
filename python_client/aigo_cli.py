@@ -22,7 +22,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -71,9 +70,11 @@ def cmd_login(email: str, password: str, code: str = "") -> None:
         print("Re-run with: login EMAIL PASSWORD <CODE>")
         # try to trigger the code being sent via smartapi
         try:
-            from python_client.aigosmart.cloud import _uc_headers
-            import urllib.request, urllib.parse
+            import urllib.parse
+            import urllib.request
+
             from python_client.aigosmart import const
+            from python_client.aigosmart.cloud import _uc_headers
 
             body = {
                 "send_to": email.strip(),
@@ -171,12 +172,12 @@ def cmd_ble_scan() -> None:
     """Standalone BLE scan for Breeze pairing devices (needs bleak)."""
     try:
         import asyncio
+
         from bleak import BleakScanner
     except ImportError:
         print("pip install bleak  (standalone BLE scanning)")
         sys.exit(1)
 
-    from python_client.aigosmart import const as aigo_const
     from python_client.aigosmart.ble_scanner import is_aigo_device
 
     async def run():

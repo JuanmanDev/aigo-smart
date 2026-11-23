@@ -5,8 +5,6 @@ prevents fans/kettles/gateways from becoming bogus light entities.
 """
 from __future__ import annotations
 
-from .const import DOMAIN
-
 FAN_LIGHT_CATEGORIES = ("fanlight", "fanlighting")
 
 
