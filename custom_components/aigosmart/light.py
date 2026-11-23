@@ -50,6 +50,7 @@ from .const import (
     PROP_AQUARIUM_LIGHT_SWITCH,
     PROP_BRIGHTNESS_CANDIDATES,
     PROP_COLOR_TEMP_CANDIDATES,
+    PROP_FANLIGHT_LIGHT_SWITCH,
     PROP_HSV_CANDIDATES,
     PROP_LIGHT_BRIGHTNESS,
     PROP_LIGHT_COLOR_TEMP,
@@ -66,6 +67,7 @@ from .helpers import (
     is_aquarium_device,
     is_bt_device,
     is_fan_device,
+    is_fan_light_device,
     is_gateway_device,
     is_kettle_device,
 )
@@ -116,6 +118,10 @@ async def async_setup_entry(
             if _is_aquarium_light(dev):
                 registry._known["light"].add(iot_id)
                 out.append(AigoSmartAquariumLight(coordinator, dev, state))
+            elif is_fan_light_device(dev, pk_catalog):
+                # the fan half is created by fan.py on the same device
+                registry._known["light"].add(iot_id)
+                out.append(AigoSmartFanLightLight(coordinator, dev, state))
             elif _is_light(dev):
                 registry._known["light"].add(iot_id)
                 out.append(AigoSmartLight(coordinator, dev, state))
@@ -372,6 +378,24 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         if self._commander is not None:
             await self._commander.async_flush()
         await super().async_will_remove_from_hass()
+
+class AigoSmartFanLightLight(AigoSmartLight):
+    """Lamp half of a ceiling fan-light (categoryKey "fanLight").
+
+    The TSL has two channels: powerstate_1 / mode_1 drive the lamp and
+    powerstate_2 / mode_2 the fan (see fan.py). Brightness, colour
+    temperature, HSVColor and LightMode are the usual light properties, so
+    everything except the switch identifier is inherited.
+    """
+
+    def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
+                 state: dict | None = None) -> None:
+        super().__init__(coordinator, dev, state)
+        self._prop_switch = PROP_FANLIGHT_LIGHT_SWITCH
+        self._attr_unique_id = f"{self._iot_id}_light"
+        self._attr_name = "Light"
+        self._apply(self._coordinator.props.get(self._iot_id, {}))
+
 
 class AigoSmartAquariumLight(AigoSmartLight):
     """Aquarium light with RGB color and preset scene effect support."""

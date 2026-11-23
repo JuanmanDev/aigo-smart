@@ -33,6 +33,6 @@ jobs:
                  python_client.tests.test_color \
                  python_client.tests.test_commander \
                  python_client.tests.test_coordinator_cache \
-                 python_client.tests.test_light_state \
+                 python_client.tests.test_light_state                  python_client.tests.test_fan_light \
                  python_client.tests.test_status \
                  python_client.tests.test_session -v

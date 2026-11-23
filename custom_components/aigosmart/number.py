@@ -5,15 +5,16 @@ import logging
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .commander import get_commander
-from .const import DOMAIN, PROP_FAN_TIMER, STATUS_ONLINE
+from .const import DOMAIN, FANLIGHT_TIMER_MAX_MIN, PROP_FAN_TIMER, STATUS_ONLINE
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
-from .helpers import is_fan_device
+from .helpers import is_fan_device, is_fan_light_device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +56,12 @@ class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):
             manufacturer="Aigostar",
             model=dev.get("productName") or "",
         )
+        if is_fan_light_device(dev, (state or {}).get("pk_catalog")):
+            # Fan-lights count appointmentClosingTime in minutes (0-1440),
+            # not hours like the tower fan.
+            self._attr_native_max_value = FANLIGHT_TIMER_MAX_MIN
+            self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
+            self._attr_mode = NumberMode.BOX
         self._value = 0.0
         self._commander = get_commander(state, self._iot_id) if state else None
 

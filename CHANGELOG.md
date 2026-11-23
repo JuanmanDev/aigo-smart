@@ -2,9 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Support for Aigostar fan-lights (cloud category `fanLight`, e.g. `a180PpkuyP6` / `a1aeYLqeLsb`) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)): a **Fan** entity (on/off, 6 speeds, Normal/Natural/Sleep/Fresh presets, forward/reverse direction) and a separate **Light** entity (on/off, brightness, colour temperature, colour on RGBCCT models). The auto-off timer uses minutes (0-1440) on these models.
+
 ### Fixed
 
 - Diagnostics downloads no longer expose the account (`identityAlias`, `identityId`), device identifiers (`iotId`, `deviceName`, TSL `link`) or ALCS local-control keys. They are redacted, and properties are keyed by a `device_N` alias instead of the iotId.
+- `fan.turn_on` / `fan.turn_off` were rejected by Home Assistant for every AigoSmart fan: the entity did not declare `TURN_ON` / `TURN_OFF` support, which HA requires since 2025.2. `async_turn_on` now also accepts HA's positional arguments.
+- Setting a fan to 0 % sent the invalid `windspeed: 0` (cloud error 6309). It now turns the fan off.
 
 ## [0.7.0] - 2026-10-24
 

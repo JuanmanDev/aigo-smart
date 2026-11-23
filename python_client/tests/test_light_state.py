@@ -126,5 +126,37 @@ class TestLightState(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(light.brightness, 128)
 
 
+class TestFanLightLight(unittest.IsolatedAsyncioTestCase):
+    """Lamp half of a BLE Mesh fan-light (issue #2): powerstate_1 drives the lamp."""
+
+    def setUp(self):
+        self.coordinator = MagicMock()
+        self.coordinator.tsl_models = {}
+        self.coordinator.client = MagicMock()
+        self.dev = {
+            "iotId": "fan_bedroom", "productName": "Fan light  ",
+            "categoryKey": "fanLight", "netType": "NET_BT", "productKey": "a180PpkuyP6",
+        }
+        self.coordinator.props = {"fan_bedroom": {
+            "powerstate_1": 1, "powerstate_2": 0, "brightness": 40,
+            "colorTemperature": 100, "LightMode": 0, "mode_1": 0, "mode_2": 0,
+            "HSVColor": {"Hue": 120, "Saturation": 100, "Value": 40},
+        }}
+
+    def test_reads_lamp_channel(self):
+        light = light_mod.AigoSmartFanLightLight(self.coordinator, self.dev)
+        self.assertTrue(light.is_on)
+        self.assertEqual(light._attr_unique_id, "fan_bedroom_light")
+        self.assertIn(ColorMode.HS, light.supported_color_modes)
+
+    async def test_turn_off_writes_powerstate_1(self):
+        light = light_mod.AigoSmartFanLightLight(self.coordinator, self.dev)
+        light.hass = MagicMock()
+        light.hass.async_add_executor_job = AsyncMock()
+        await light.async_turn_off()
+        items = light.hass.async_add_executor_job.call_args[0][2]
+        self.assertEqual(items, {"powerstate_1": 0})
+
+
 if __name__ == "__main__":
     unittest.main()

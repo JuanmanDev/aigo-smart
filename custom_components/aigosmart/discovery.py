@@ -26,7 +26,7 @@ CATEGORY_PLATFORM = {
     "mininglamp": "light", "floodlight": "light", "spotlight": "light",
     "chandelier": "light", "walllamp": "light", "smartwalllamp": "light",
     "smartdesklamp": "light", "caretablelamp": "light", "sockettablelamp": "light",
-    "stringoflights": "light", "solarlamp": "light", "fanlighting": "light",
+    "stringoflights": "light", "solarlamp": "light",
     "dimming_panel": "light", "lighting": "light", "light": "light",
     # switches / plugs
     "socket": "switch", "meteredsocket": "switch", "outlet": "switch",
@@ -42,6 +42,9 @@ CATEGORY_PLATFORM = {
     "sensor": "sensor", "smokealarm": "sensor", "doorcontact": "sensor",
     # aquarium (composite device - handled by multiple platforms)
     "aquarium": "aquarium",
+    # fan-lights (composite device - fan + light + timer + key beep).
+    # The catalog says "FanLighting", the cloud returns "fanLight".
+    "fanlighting": "fanlight", "fanlight": "fanlight",
 }
 
 # Heater-family also climate
