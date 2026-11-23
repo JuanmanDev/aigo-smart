@@ -110,6 +110,14 @@ platforms, the 498-product PK catalog, and the full
 **Requirements:** Home Assistant **2024.11 or newer** and an AigoSmart (Aigostar)
 app account.
 
+> **Heads-up: Home Assistant 2026.11 will be required soon.** An upcoming
+> release (planned as v0.11.0) moves climate devices and kettles to Home
+> Assistant's new temperature API, which only exists from **2026.11**. The old
+> API stops working in Home Assistant 2027.11, so this change is needed. If you
+> are on an older Home Assistant, please plan to update; until then, v0.10.x
+> keeps working on 2024.11 or newer. HACS won't offer the new release to older
+> Home Assistant versions.
+
 ### HACS (recommended)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JuanmanDev&repository=aigo-smart&category=integration)
