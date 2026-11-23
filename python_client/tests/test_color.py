@@ -83,5 +83,58 @@ class TestColorModel(unittest.TestCase):
         self.assertEqual(ms.color_value, 1)
 
 
+HSV_SPEC = ColorSpec(
+    identifier="HSVColor",
+    encoding=ENCODING_HSV,
+    members={"hue": "Hue", "saturation": "Saturation", "value": "Value"},
+    maxima={"hue": 360.0, "saturation": 100.0, "value": 100.0},
+)
+MESH16_SPEC = ColorSpec(
+    identifier="colorData",
+    encoding=ENCODING_HSV,
+    members={"hue": "h", "saturation": "s", "value": "v"},
+    maxima={"hue": 65535.0, "saturation": 65535.0, "value": 65535.0},
+)
+
+
+class TestRedAndPrimaries(unittest.TestCase):
+    """#2: red must encode exactly like the app's red (Hue 0, Saturation 100)."""
+
+    def test_red(self):
+        self.assertEqual(HSV_SPEC.build(0, 100, 100),
+                         {"Hue": 0, "Saturation": 100, "Value": 100})
+
+    def test_hue_360_and_near_360_wrap_to_0(self):
+        for hue in (360, 359.6, 720):
+            # whole-degree range: 359.6 rounds to 360, which is red = 0
+            self.assertEqual(HSV_SPEC.build(hue, 100, 100)["Hue"], 0, hue)
+        for hue in (360, 720):
+            self.assertEqual(MESH16_SPEC.build(hue, 100, 100)["h"], 0, hue)
+        self.assertEqual(MESH16_SPEC.build(359.6, 100, 100)["h"], 65462)
+        self.assertEqual(HSV_SPEC.build(359, 100, 100)["Hue"], 359)
+
+    def test_primaries_roundtrip(self):
+        for hue in (0, 60, 120, 180, 240, 300, 359):
+            for spec in (HSV_SPEC, MESH16_SPEC):
+                raw = spec.build(hue, 100, 100)
+                h, s = spec.to_hs(raw)
+                self.assertAlmostEqual(h, hue, delta=0.6, msg=(spec.identifier, hue))
+                self.assertAlmostEqual(s, 100, delta=0.01)
+
+    def test_shadow_quantisation_reads_back_close(self):
+        # values the mesh lamp reports after a write (16-bit quantised)
+        h, s = HSV_SPEC.to_hs({"Hue": 8.99794, "Saturation": 66.9993133, "Value": 100})
+        self.assertAlmostEqual(h, 9, delta=0.01)
+        self.assertAlmostEqual(s, 67, delta=0.01)
+
+    def test_rgb_primaries(self):
+        rgb = ColorSpec(identifier="RGBColor", encoding="rgb",
+                        members={"red": "Red", "green": "Green", "blue": "Blue"})
+        self.assertEqual(rgb.build(0, 100, 100), {"Red": 255, "Green": 0, "Blue": 0})
+        self.assertEqual(rgb.build(120, 100, 100), {"Red": 0, "Green": 255, "Blue": 0})
+        self.assertEqual(rgb.build(240, 100, 100), {"Red": 0, "Green": 0, "Blue": 255})
+        self.assertEqual(rgb.to_hs({"Red": 255, "Green": 0, "Blue": 0}), (0.0, 100.0))
+
+
 if __name__ == "__main__":
     unittest.main()

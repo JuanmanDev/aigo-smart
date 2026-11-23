@@ -182,6 +182,8 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         self._brightness = 255
         self._color_temp_k = 3700
         self._hs = None
+        # last known white/colour mode value (None = not reported yet)
+        self._light_mode: int | None = None
         self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(self._coordinator.props.get(self._iot_id, {}))
@@ -338,7 +340,8 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         # If mode is explicitly white / CCT, clear HS so color_mode is COLOR_TEMP
         if self._mode_spec is not None and self._mode_spec.identifier in props:
             try:
-                if int(props[self._mode_spec.identifier]) == self._mode_spec.white_value:
+                self._light_mode = int(props[self._mode_spec.identifier])
+                if self._light_mode == self._mode_spec.white_value:
                     self._hs = None
             except (TypeError, ValueError):
                 _LOGGER.debug(
@@ -348,10 +351,28 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
 
     # -- commands -------------------------------------------------------------
 
+    def _power_on_items(self) -> dict[str, Any]:
+        """Switch part of a turn_on write."""
+        return {self._prop_switch: 1}
+
+    def _mode_change(self, value: int) -> dict[str, Any]:
+        """Light-mode write, only when the mode actually changes."""
+        if self._mode_spec is None or self._light_mode == value:
+            return {}
+        self._light_mode = value
+        return {self._mode_spec.identifier: value}
+
     async def async_turn_on(self, **kwargs: Any) -> None:
-        items: dict[str, Any] = {self._prop_switch: 1}
+        items: dict[str, Any] = self._power_on_items()
+        # The white/colour mode switch is written separately, after the colour
+        # or colour-temperature value it activates, and only when it changes.
+        # In one combined write the gateway may apply the mode first, and the
+        # lamp then falls back to its previously stored colour (#2, #3; same
+        # approach as hass-aigosmart).
+        mode_item: dict[str, Any] = {}
         # Save rollback state — restored if the write fails terminally
-        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs,
+                self._light_mode)
         self._is_on = True
 
         if ATTR_BRIGHTNESS in kwargs:
@@ -364,7 +385,7 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
             pct = (k - KELVIN_WARM) / (KELVIN_COOL - KELVIN_WARM)
             items[self._prop_color_temp] = max(0, min(100, round(pct * 100)))
             if self._color_spec is not None and self._mode_spec is not None:
-                items[self._mode_spec.identifier] = self._mode_spec.white_value
+                mode_item = self._mode_change(self._mode_spec.white_value)
             self._color_temp_k = k
             self._hs = None
 
@@ -373,26 +394,41 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
             b = kwargs.get(ATTR_BRIGHTNESS, self._brightness) / 255 * 100
             items[self._color_spec.identifier] = self._color_spec.build(h, s, b)
             if self._mode_spec is not None:
-                items[self._mode_spec.identifier] = self._mode_spec.color_value
+                mode_item = self._mode_change(self._mode_spec.color_value)
             self._hs = (h, s)
+
+        if not items:
+            if mode_item:
+                items, mode_item = mode_item, {}
+            else:
+                # already on, nothing to change: a bare power-on is a
+                # harmless resync for a lamp switched off elsewhere
+                items = {self._prop_switch: 1}
 
         # Optimistic state is already applied above; the commander serializes
         # rapid consecutive calls (slider moves) into one verified write.
         self.async_write_ha_state()
-        self._coordinator.async_set_optimistic_props(self._iot_id, items, hold_duration=12.0)
+        self._coordinator.async_set_optimistic_props(
+            self._iot_id, {**items, **mode_item}, hold_duration=12.0)
         if self._commander is not None:
-            await self._commander.async_send(items)
+            await self._commander.async_send(items, followup=mode_item or None)
         else:
             try:
                 await self.hass.async_add_executor_job(
                     self._coordinator.client.set_properties, self._iot_id, items
                 )
+                if mode_item:
+                    await self.hass.async_add_executor_job(
+                        self._coordinator.client.set_properties, self._iot_id,
+                        mode_item,
+                    )
             except Exception as exc:
                 _LOGGER.warning("AigoSmart turn_on failed for %s: %s", self._iot_id, exc)
                 self._revert(prev)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs)
+        prev = (self._is_on, self._brightness, self._color_temp_k, self._hs,
+                self._light_mode)
         self._is_on = False
         self.async_write_ha_state()
         self._coordinator.async_set_optimistic_props(
@@ -411,7 +447,8 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
 
     def _revert(self, prev: tuple) -> None:
         """Restore pre-command state after a failed write."""
-        self._is_on, self._brightness, self._color_temp_k, self._hs = prev
+        (self._is_on, self._brightness, self._color_temp_k, self._hs,
+         self._light_mode) = prev
         self._coordinator.clear_optimistic_props(self._iot_id)
         self.async_write_ha_state()
 
@@ -436,6 +473,12 @@ class AigoSmartFanLightLight(AigoSmartLight):
         self._attr_unique_id = f"{self._iot_id}_light"
         self._attr_name = "Light"
         self._apply(self._coordinator.props.get(self._iot_id, {}))
+
+    def _power_on_items(self) -> dict[str, Any]:
+        # Same firmware as the fan half: a value bundled with a redundant
+        # powerstate = 1 can be dropped (diagnosed in #2), so only send the
+        # switch when the lamp is off.
+        return {} if self._is_on else {self._prop_switch: 1}
 
 
 class AigoSmartAquariumLight(AigoSmartLight):

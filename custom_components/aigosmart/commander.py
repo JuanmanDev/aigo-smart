@@ -44,6 +44,9 @@ class AigoCommander:
         # async callable() invoked once when a batch is terminally dropped
         self._on_failure = on_failure
         self._pending: dict = {}
+        # written in a separate batch after _pending (e.g. a light-mode
+        # switch that must land after the colour value it activates)
+        self._followup: dict = {}
         self._attempts = 0
         self._lock = asyncio.Lock()
         self._task: asyncio.Task | None = None
@@ -55,10 +58,18 @@ class AigoCommander:
         """True while the last command may not yet be reflected in the shadow."""
         return time.monotonic() < self.skip_until
 
-    async def async_send(self, items: dict) -> None:
-        """Queue a property write. Consecutive calls coalesce; last wins."""
+    async def async_send(self, items: dict, followup: dict | None = None) -> None:
+        """Queue a property write. Consecutive calls coalesce; last wins.
+
+        ``followup`` is written in its own batch once ``items`` succeeded.
+        """
         async with self._lock:
             self._pending.update(items)
+            for key in items:
+                # a direct write supersedes a queued follow-up of the same key
+                self._followup.pop(key, None)
+            if followup:
+                self._followup.update(followup)
             self._attempts = 0
             if self._task is None or self._task.done():
                 self._task = asyncio.create_task(self._run())
@@ -66,7 +77,8 @@ class AigoCommander:
     async def async_flush(self) -> None:
         """Force-send anything pending immediately (used on unload)."""
         async with self._lock:
-            if self._pending and (self._task is None or self._task.done()):
+            if (self._pending or self._followup) and (
+                    self._task is None or self._task.done()):
                 self._task = asyncio.create_task(self._run())
         if self._task:
             try:
@@ -81,7 +93,9 @@ class AigoCommander:
             await asyncio.sleep(DEBOUNCE)
             async with self._lock:
                 if not self._pending:
-                    return
+                    if not self._followup:
+                        return
+                    self._pending, self._followup = self._followup, {}
                 items = self._pending
                 self._pending = {}
             _LOGGER.debug("AigoSmart write for %s: %s", self._iot_id, items)
@@ -133,11 +147,25 @@ class AigoCommander:
     async def _fail(self) -> None:
         """Terminal write failure: revert optimistic state + mark offline."""
         self.skip_until = 0.0
+        self._followup = {}
         if self._on_failure is not None:
             try:
                 await self._on_failure()
             except Exception as exc:
                 _LOGGER.debug("AigoSmart on_failure callback failed: %s", exc)
+
+
+# Shadow values come back quantised (mesh colour is 16-bit: a written Hue 9
+# reads back as 8.99794), so compare numbers with a tolerance instead of
+# truncating, which made every colour write look unconfirmed.
+_MATCH_TOLERANCE = 0.5
+
+
+def _same(got, want) -> bool:
+    try:
+        return abs(float(got) - float(want)) <= _MATCH_TOLERANCE
+    except (TypeError, ValueError):
+        return got == want
 
 
 def _matches(props: dict, items: dict) -> bool:
@@ -150,21 +178,10 @@ def _matches(props: dict, items: dict) -> bool:
             if not isinstance(got, dict):
                 return False
             for member, mval in want.items():
-                if mval is None:
-                    continue
-                try:
-                    if int(float(got.get(member, -1))) != int(float(mval)):
-                        return False
-                except (TypeError, ValueError):
-                    if got.get(member) != mval:
-                        return False
-        else:
-            try:
-                if int(float(got)) != int(float(want)):
+                if mval is not None and not _same(got.get(member), mval):
                     return False
-            except (TypeError, ValueError):
-                if got != want:
-                    return False
+        elif not _same(got, want):
+            return False
     return True
 
 
