@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-23
+
 ### Fixed
 
 - Colour changes on fan-light lamps and other colour lights were sometimes ignored (most visibly red) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2), [#3](https://github.com/JuanmanDev/aigo-smart/issues/3)). Every colour write bundled the value with a redundant switch-on and the white/colour `LightMode`. The cloud accepted it, but the lamp could drop the colour. The white/colour mode is now written in a separate write after the colour or colour temperature, and only when it changes. Fan-light lamps no longer get a redundant `powerstate_1: 1` while on, which matches the fan-speed fix. Thanks to [@Loginbug](https://github.com/Loginbug) for the debug log that showed it.
