@@ -19,6 +19,7 @@ from .const import AQUARIUM_ERROR_CODES, AQUARIUM_FEED_STATE, AQUARIUM_WATER_PUM
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry
 from .helpers import is_aquarium_device
+from .pet import setup_pet_platform
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -101,6 +102,9 @@ async def async_setup_entry(
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
     entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
+
+    # Pet fountains / feeders (dynamic, like the air fryer)
+    setup_pet_platform(hass, entry, state, "sensor", async_add_entities)
 
 
 class AigoSmartSensor(CoordinatorEntity, SensorEntity):

@@ -63,6 +63,12 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
   time, flip reminder and delay start, plus status / error / flip / lid
   sensors. ⚠️ Turning **Cooking** on starts the heating element remotely,
   exactly like the app does — only automate it with the basket in place.
+- **Pet water fountains** (`petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza
+  S40101N34) — pump on/off, mode (continuous / intermittent), flow
+  (low / medium / high), water level, days until filter change and cleaning
+- **Pet feeders** (`petFeeder`, e.g. `a1xEttfYqF2`) — last feeding, portions
+  fed today, feeding schedule (read-only), indicator light and slow-feed
+  switches, battery. Manual feeding is not available yet.
 - **Smart Aquariums** — full controls (power, RGB lighting color wheel & 12 scenes, 3-speed water pump selector, buzzer, child lock, feeding protection/reminder) and sensors (temperature, feeding state, error telemetry)
 - **Diagnostics** — native Download-diagnostics button on the integration
   and every device page, with cloud metadata, live properties, full TSL model,
@@ -88,6 +94,8 @@ platforms, the 498-product PK catalog, and the full
 
 ### Community Contributors & Helpers
 
+- [@emanuelrg123](https://github.com/emanuelrg123) — for issue [#4](https://github.com/JuanmanDev/aigo-smart/issues/4): diagnostics and app screenshots of a **pet water fountain** and **pet feeder**.
+- [@davidpla7](https://github.com/davidpla7) — for issue [#2](https://github.com/JuanmanDev/aigo-smart/issues/2): diagnostics, testing and the diagnosis of the **fan-light** speed control.
 - [@jazzvivi2](https://github.com/jazzvivi2) — for issue [#5](https://github.com/JuanmanDev/aigo-smart/issues/5): the **Aigostar Air Fryer** support, written and tested on a real device.
 - [@bduartept1](https://github.com/bduartept1) — for reporting issue [#1](https://github.com/JuanmanDev/aigo-smart/issues/1), testing multiple releases, providing device diagnostics, TSL models, and screenshots to make the **AigoSmart Aquarium** fully supported in Home Assistant!
 

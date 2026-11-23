@@ -100,6 +100,19 @@ async def async_get_config_entry_diagnostics(
                 "identityAlias": dev.get("identityAlias"),
             })
 
+    # Include each product's TSL (property list, enums, ranges): reporters
+    # usually attach this file rather than the per-device one, and without
+    # the TSL an unsupported device cannot be added.
+    tsl_by_product: dict[str, Any] = {}
+    if coordinator:
+        for dev in coordinator.devices:
+            pk, iot_id = dev.get("productKey", ""), dev.get("iotId", "")
+            if pk and iot_id and pk not in tsl_by_product:
+                try:
+                    tsl_by_product[pk] = await coordinator.async_get_tsl(pk, iot_id)
+                except Exception as exc:  # never fail the download
+                    tsl_by_product[pk] = {"_error": str(exc)}
+
     return async_redact_data({
         "integration": {
             "domain": DOMAIN,
@@ -124,6 +137,7 @@ async def async_get_config_entry_diagnostics(
         },
         "devices": devices_out,
         "properties": props_out,
+        "tsl_models": tsl_by_product,
     }, TO_REDACT)
 
 
