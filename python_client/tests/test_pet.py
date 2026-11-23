@@ -15,6 +15,7 @@ for _mod in (
     "homeassistant.helpers.device_registry", "homeassistant.helpers.entity_platform",
     "homeassistant.helpers.update_coordinator", "homeassistant.const",
     "homeassistant.exceptions", "homeassistant.components",
+    "homeassistant.components.button",
     "homeassistant.components.number", "homeassistant.components.select",
     "homeassistant.components.sensor", "homeassistant.components.switch",
     "homeassistant.util", "homeassistant.util.dt",
@@ -40,6 +41,22 @@ for _mod, _cls in (("number", "NumberEntity"), ("select", "SelectEntity"),
     setattr(sys.modules[f"homeassistant.components.{_mod}"], _cls,
             type(_cls, (_Entity,), {}))
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
+
+
+class _RestoreNumber(_Entity):
+    """Stand-in for homeassistant.components.number.RestoreNumber."""
+
+    _last_number_data = None
+
+    async def async_added_to_hass(self):
+        pass
+
+    async def async_get_last_number_data(self):
+        return self._last_number_data
+
+
+sys.modules["homeassistant.components.number"].RestoreNumber = _RestoreNumber
+sys.modules["homeassistant.components.button"].ButtonEntity = type("ButtonEntity", (_Entity,), {})
 sys.modules["homeassistant.core"].callback = lambda func: func
 # "today" in Europe/Lisbon (UTC+0 in November) on the day of the report
 _DT = sys.modules["homeassistant.util.dt"]
@@ -136,6 +153,7 @@ class _PetBase(unittest.IsolatedAsyncioTestCase):
         self.coordinator.props = {"fountain": dict(FOUNTAIN_PROPS),
                                   "feeder": dict(FEEDER_PROPS)}
         self.coordinator.is_device_online.return_value = True
+        self.coordinator.tsl_models = {}
 
         def _set_optimistic(iot_id, items, hold_duration=5.0):
             self.coordinator.props[iot_id].update(items)
@@ -164,9 +182,12 @@ class TestEntityCreation(_PetBase):
         self.assertEqual(names("switch", "fountain"), ["Pump"])
         self.assertEqual(names("select", "fountain"), ["Flow", "Mode"])
         self.assertEqual(len(names("sensor", "fountain")), 7)
-        self.assertEqual(names("switch", "feeder"), ["Indicator light", "Slow feed"])
+        self.assertEqual(names("switch", "feeder"), ["Indicator light", "Slow feed", "Voice on feed"])
         self.assertEqual(names("select", "feeder"), [])
-        self.assertEqual(len(names("sensor", "feeder")), 7)
+        self.assertEqual(len(names("sensor", "feeder")), 8)
+        # without the TSL: no manual feed and no reset buttons
+        self.assertEqual(self.make("button"), [])
+        self.assertEqual(self.make("number"), [])
 
     def test_no_duplicates(self):
         known: set = set()
@@ -240,6 +261,137 @@ class TestWrites(_PetBase):
         sensors = self.make("sensor")
         self.assertFalse(any(hasattr(e, "async_select_option") or hasattr(e, "async_turn_on")
                              for e in sensors))
+
+
+# Excerpts of the TSLs in the reporter's device diagnostics (#4)
+def _prop(identifier, access, type_, specs):
+    return {"identifier": identifier, "accessMode": access,
+            "dataType": {"type": type_, "specs": specs}}
+
+
+FEEDER_TSL = {"properties": [
+    _prop("manualFeeding", "rw", "int", {"min": "1", "max": "24", "step": "1"}),
+    _prop("errorCode", "r", "enum", {"0": "正常", "244": "余粮不足", "245": "设备卡粮", "247": "电量低"}),
+    _prop("feedState", "r", "enum", {"0": "待机", "1": "喂食中", "2": "喂食完成"}),
+    _prop("batteryState", "r", "enum", {"0": "外电供电", "1": "电池供电"}),
+    _prop("weightPer", "r", "enum", {"7": "每份约7g"}),
+    _prop("lampSwitch", "rw", "bool", {"0": "关闭", "1": "打开"}),
+    _prop("recordControl", "rw", "bool", {"0": "off", "1": "on"}),
+    _prop("restoreFactory", "rw", "bool", {"0": "失败", "1": "成功"}),
+]}
+FOUNTAIN_TSL = {"properties": [
+    _prop("Switch", "rw", "bool", {"0": "关", "1": "开"}),
+    _prop("mode", "rw", "enum", {"0": "持续出水", "1": "间歇出水"}),
+    _prop("WaterGear", "rw", "enum", {"1": "低档", "2": "中档", "3": "高档"}),
+    _prop("FilterReset", "rw", "bool", {"0": "关", "1": "开"}),
+    _prop("CleaningReset", "rw", "bool", {"0": "关", "1": "开"}),
+    _prop("errorCode", "r", "enum", {"0": "正常", "236": "水位过低"}),
+]}
+
+
+class TestTslHelpers(unittest.TestCase):
+    def test_writable_and_range(self):
+        self.assertTrue(pet.tsl_writable(FEEDER_TSL, "manualFeeding"))
+        self.assertFalse(pet.tsl_writable(FEEDER_TSL, "errorCode"))
+        self.assertIsNone(pet.tsl_writable(FEEDER_TSL, "nope"))
+        self.assertIsNone(pet.tsl_writable({}, "manualFeeding"))
+        self.assertEqual(pet.tsl_int_range(FEEDER_TSL, "manualFeeding", (0, 0)), (1, 24))
+        self.assertEqual(pet.tsl_int_range({}, "manualFeeding", (1, 9)), (1, 9))
+
+    def test_tsl_enums_match_our_mappings(self):
+        for prop, mapping in (("mode", pet.FOUNTAIN_MODES), ("WaterGear", pet.FOUNTAIN_FLOW)):
+            specs = pet.tsl_property(FOUNTAIN_TSL, prop)["dataType"]["specs"]
+            self.assertEqual(sorted(int(k) for k in specs), sorted(mapping))
+        specs = pet.tsl_property(FEEDER_TSL, "errorCode")["dataType"]["specs"]
+        self.assertEqual(sorted(int(k) for k in specs), sorted(pet.FEEDER_ERRORS))
+
+
+class TestWithTsl(_PetBase):
+    def setUp(self):
+        super().setUp()
+        self.coordinator.tsl_models = {"a1xEttfYqF2": FEEDER_TSL, "a163VQp0e0e": FOUNTAIN_TSL}
+
+    def test_feed_entities_created_from_tsl(self):
+        self.assertEqual([e._attr_name for e in self.make("number")], ["Feed portions"])
+        buttons = sorted(e._attr_name for e in self.make("button"))
+        self.assertEqual(buttons, ["Feed", "Reset cleaning", "Reset filter"])
+
+    def test_restore_factory_never_exposed(self):
+        names = [e._attr_name for plat in ("button", "number", "switch", "select", "sensor")
+                 for e in self.make(plat)]
+        self.assertFalse(any("factory" in n.lower() for n in names))
+
+    def _state(self):
+        return {"coordinator": self.coordinator, "hass": MagicMock(), "client": MagicMock()}
+
+    async def test_feed_button_sends_portions(self):
+        state = self._state()
+        number = next(e for e in pet.make_pet_entities("number", self.coordinator, state, {}, set()))
+        button = next(e for e in pet.make_pet_entities("button", self.coordinator, state, {}, set())
+                      if e._attr_name == "Feed")
+        self.with_commander(number)
+        self.with_commander(button)
+        self.assertEqual(number.native_value, 1)          # TSL minimum by default
+        await number.async_set_native_value(3)
+        number._commander.async_send.assert_not_awaited()  # setting portions never feeds
+        await button.async_press()
+        button._commander.async_send.assert_awaited_once_with({"manualFeeding": 3})
+
+    async def test_feed_portions_restored_and_clamped_without_writing(self):
+        state = self._state()
+        number = next(iter(pet.make_pet_entities("number", self.coordinator, state, {}, set())))
+        self.with_commander(number)
+        number._last_number_data = MagicMock(native_value=40)
+        await number.async_added_to_hass()
+        self.assertEqual(number.native_value, 24)
+        number._commander.async_send.assert_not_awaited()
+
+    async def test_reset_buttons(self):
+        reset = self.with_commander(self.by_name("button", "fountain", "Reset filter"))
+        await reset.async_press()
+        reset._commander.async_send.assert_awaited_with({"FilterReset": 1})
+
+    def test_read_only_in_tsl_means_no_write_entity(self):
+        tsl = {"properties": [_prop("Switch", "r", "bool", {})]}
+        self.coordinator.tsl_models = {"a163VQp0e0e": tsl}
+        self.assertEqual([e for e in self.make("switch") if e._iot_id == "fountain"], [])
+
+    def test_grams_attribute(self):
+        today = self.by_name("sensor", "feeder", "Portions today")
+        self.assertEqual(today.extra_state_attributes, {"approx_grams": 63})
+
+
+class TestNamedCodes(_PetBase):
+    def test_codes_have_names_and_unknown_stay_raw(self):
+        self.coordinator.props["feeder"].update(errorCode=244, feedState=1, batteryState=1)
+        self.assertEqual(self.by_name("sensor", "feeder", "Error").native_value, "low_food")
+        self.assertEqual(self.by_name("sensor", "feeder", "Feed state").native_value, "feeding")
+        self.assertEqual(self.by_name("sensor", "feeder", "Power source").native_value, "battery")
+        self.coordinator.props["feeder"]["errorCode"] = 999
+        err = self.by_name("sensor", "feeder", "Error")
+        self.assertEqual(err.native_value, 999)
+        self.assertEqual(err.extra_state_attributes, {"code": 999})
+        self.coordinator.props["fountain"].update(WaterStatus=1, errorCode=236)
+        self.assertEqual(self.by_name("sensor", "fountain", "Water status").native_value, "low_water")
+        self.assertEqual(self.by_name("sensor", "fountain", "Error").native_value,
+                         "water_level_too_low")
+
+    async def test_voice_switch(self):
+        voice = self.with_commander(self.by_name("switch", "feeder", "Voice on feed"))
+        await voice.async_turn_on()
+        voice._commander.async_send.assert_awaited_with({"recordControl": 1})
+
+
+class TestFountainOnePropertyPerWrite(unittest.TestCase):
+    def test_fountain_commander_set_to_single_property(self):
+        coordinator = MagicMock()
+        coordinator.props = {"fountain": dict(FOUNTAIN_PROPS)}
+        coordinator.tsl_models = {}
+        state = {"coordinator": coordinator, "hass": MagicMock(), "client": MagicMock()}
+        pet.FountainPump(coordinator, FOUNTAIN, state)
+        self.assertTrue(state["commanders"]["fountain"].one_per_write)
+        pet.FeederLight(coordinator, FEEDER, state)
+        self.assertFalse(state["commanders"]["feeder"].one_per_write)
 
 
 if __name__ == "__main__":

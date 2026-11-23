@@ -281,9 +281,53 @@ class TestColourWriteOrdering(unittest.IsolatedAsyncioTestCase):
         light = self._light(AigoSmartLight, self.WIFI, dict(self.WIFI_WHITE))
         await light.async_turn_on(hs_color=(120, 100), brightness=153)
         items, followup = self.sent(light)
-        self.assertEqual(items, {"LightSwitch": 1, "Brightness": 60,
+        # the brightness travels in the colour's Value, not the white Brightness
+        self.assertEqual(items, {"LightSwitch": 1,
                                  "HSVColor": {"Hue": 120, "Saturation": 100, "Value": 60}})
         self.assertEqual(followup, {"LightMode": 1})
+
+    # -- #2: dimming must not turn a coloured lamp white ------------------------
+
+    async def test_dimming_in_colour_keeps_colour(self):
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, dict(self.LAMP_ON_COLOUR))
+        await light.async_turn_on(brightness=128)
+        items, followup = self.sent(light)
+        self.assertEqual(items, {"HSVColor": {"Hue": 60, "Saturation": 96, "Value": 50}})
+        self.assertIsNone(followup)
+        self.assertEqual(light.color_mode, ColorMode.HS)
+        self.assertEqual(light.brightness, 128)
+
+    async def test_dimming_in_white_uses_brightness(self):
+        props = dict(self.LAMP_ON_COLOUR, LightMode=0)
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, props)
+        await light.async_turn_on(brightness=128)
+        self.assertEqual(self.sent(light), ({"brightness": 50}, None))
+        self.assertEqual(light.color_mode, ColorMode.COLOR_TEMP)
+
+    async def test_wifi_dimming_in_colour_keeps_colour(self):
+        props = dict(self.WIFI_WHITE, LightMode=1)
+        light = self._light(AigoSmartLight, self.WIFI, props)
+        await light.async_turn_on(brightness=255)
+        items, followup = self.sent(light)
+        self.assertNotIn("Brightness", items)
+        self.assertEqual(items["HSVColor"], {"Hue": 306, "Saturation": 77, "Value": 100})
+        self.assertIsNone(followup)
+
+    async def test_colour_temp_with_brightness_unchanged(self):
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, dict(self.LAMP_ON_COLOUR))
+        await light.async_turn_on(color_temp_kelvin=4600, brightness=128)
+        items, followup = self.sent(light)
+        self.assertEqual(items, {"brightness": 50, "colorTemperature": 50})
+        self.assertEqual(followup, {"LightMode": 0})
+
+    def test_colour_brightness_read_from_colour_value(self):
+        props = dict(self.LAMP_ON_COLOUR, brightness=100,
+                     HSVColor={"Hue": 60, "Saturation": 96, "Value": 25.0004})
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, props)
+        self.assertEqual(light.brightness, 64)
+        # in white mode the white brightness property is used
+        light._apply(dict(props, LightMode=0, brightness=80))
+        self.assertEqual(light.brightness, 204)
 
 
 if __name__ == "__main__":

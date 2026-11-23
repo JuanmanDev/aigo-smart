@@ -17,6 +17,7 @@ from .const import DOMAIN, FANLIGHT_TIMER_MAX_MIN, PROP_FAN_TIMER
 from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry
 from .helpers import is_fan_device, is_fan_light_device
+from .pet import setup_pet_platform
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,11 +34,24 @@ async def async_setup_entry(
     pk_catalog: dict = state.get("pk_catalog", {})
     registry.register("number")
 
-    entities = []
-    for dev in coordinator.devices:
-        if is_fan_device(dev):
-            entities.append(AigoSmartFanTimer(coordinator, dev, state))
-    async_add_entities(entities)
+    known = registry._known["number"]
+
+    @callback
+    def _async_handle_new(*_args) -> None:
+        # Fan timers, for devices present at startup and added later
+        new = []
+        for dev in coordinator.devices:
+            iot_id = dev.get("iotId", "")
+            key = f"{iot_id}_timer"
+            if iot_id and is_fan_device(dev) and key not in known:
+                known.add(key)
+                new.append(AigoSmartFanTimer(coordinator, dev, state))
+        if new:
+            async_add_entities(new)
+
+    _async_handle_new()
+    entry.async_on_unload(
+        hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_new))
 
     # Air fryer entities (dynamic: re-checked on every coordinator update)
     def _make_airfryer() -> list:
@@ -55,6 +69,9 @@ async def async_setup_entry(
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
     entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
+
+    # Pet feeder manual-feed portions
+    setup_pet_platform(hass, entry, state, "number", async_add_entities)
 
 
 class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):
@@ -87,6 +104,8 @@ class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):
             self._attr_mode = NumberMode.BOX
         self._value = 0.0
         self._commander = get_commander(state, self._iot_id) if state else None
+        # show the current value right away instead of 0 until the next poll
+        self._apply(coordinator.props.get(self._iot_id, {}))
 
     @property
     def native_value(self) -> float | None:
@@ -94,7 +113,10 @@ class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        props = self._coordinator.props.get(self._iot_id, {})
+        self._apply(self._coordinator.props.get(self._iot_id, {}))
+        self.async_write_ha_state()
+
+    def _apply(self, props: dict) -> None:
         val = props.get(PROP_FAN_TIMER)
         if val is not None:
             try:
@@ -104,7 +126,6 @@ class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):
                     "AigoSmart: non-numeric property value for %s",
                     self._iot_id,
                 )
-        self.async_write_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
         self._value = value

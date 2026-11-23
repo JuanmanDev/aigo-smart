@@ -106,39 +106,18 @@ def platform_for_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> 
 # ---------------- registry --------------------------------------------------
 
 class DeviceRegistry:
-    """Tracks which iotIds already have entities, per platform."""
+    """Tracks which entities have been created, per platform.
+
+    Platforms add a key per entity (usually the iotId, or iotId + suffix for
+    sub-entities) to ``_known[platform]`` so that re-running entity creation
+    on every coordinator update never duplicates an entity.
+    """
 
     def __init__(self) -> None:
-        self._known: dict[str, set[str]] = {}   # platform -> set(iotId)
-        self._devices: dict[str, dict] = {}     # iotId -> device dict
+        self._known: dict[str, set[str]] = {}   # platform -> set(entity key)
 
     def register(self, platform: str) -> None:
         self._known.setdefault(platform, set())
-
-    def sync(
-        self,
-        devices: list[dict],
-        pk_catalog: dict[str, str] | None = None,
-    ) -> dict[str, list[dict]]:
-        """Diff devices against known entities.
-
-        Returns {platform: [new device dicts]} for platforms with additions.
-        """
-        new_by_platform: dict[str, list[dict]] = {}
-        for dev in devices:
-            iot_id = dev.get("iotId")
-            if not iot_id:
-                continue
-            plat = platform_for_device(dev, pk_catalog)
-            if plat is None:
-                _LOGGER.debug("No platform mapping for %s (category=%s pk=%s)",
-                              iot_id, dev.get("categoryKey"), dev.get("productKey"))
-                continue
-            self._devices[iot_id] = dev
-            if iot_id not in self._known.setdefault(plat, set()):
-                self._known[plat].add(iot_id)
-                new_by_platform.setdefault(plat, []).append(dev)
-        return new_by_platform
 
 
 # ---------------- PK catalog -------------------------------------------------

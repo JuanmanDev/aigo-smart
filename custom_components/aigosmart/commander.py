@@ -49,6 +49,9 @@ class AigoCommander:
         self._followup: dict = {}
         self._attempts = 0
         self._lock = asyncio.Lock()
+        # send each property in its own write (devices that drop or ignore
+        # multi-property writes); off by default
+        self.one_per_write = False
         self._task: asyncio.Task | None = None
         self.skip_until: float = 0.0
 
@@ -98,6 +101,10 @@ class AigoCommander:
                     self._pending, self._followup = self._followup, {}
                 items = self._pending
                 self._pending = {}
+                if self.one_per_write and len(items) > 1:
+                    first = next(iter(items))
+                    self._pending = {k: v for k, v in items.items() if k != first}
+                    items = {first: items[first]}
             _LOGGER.debug("AigoSmart write for %s: %s", self._iot_id, items)
             try:
                 # Write via the CLOUD (not local ALCS): local CoAP writes are

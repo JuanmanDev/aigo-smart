@@ -63,5 +63,43 @@
       "not_loaded": "The AigoSmart integration must be set up first.",
       "no_devices_found": "No Aigostar devices in pairing mode were found. Hold the device's power button for ~5 seconds and try again."
     }
+  },
+  "issues": {
+    "unsupported_device": {
+      "title": "{name} is not supported yet",
+      "description": "AigoSmart found **{name}** ({product}, category `{category}`, productKey `{product_key}`), but this kind of device is not supported yet, so it has no entities in Home Assistant.\n\nSelect **Learn more** to open a device support request and attach the device's diagnostics (device page → ⋮ → Download diagnostics). This message disappears automatically once a version of the integration supports the device, or when the device is removed from your AigoSmart account."
+    }
+  },
+  "services": {
+    "sync_devices": {
+      "name": "Sync devices",
+      "description": "Re-fetch the device list from the AigoSmart cloud and reload the integration."
+    },
+    "discover_local": {
+      "name": "Discover local devices",
+      "description": "Run ALCS multicast discovery on the LAN and log discovered AigoSmart devices."
+    },
+    "add_device": {
+      "name": "Add device",
+      "description": "Start the guided Add-Device flow. Discovers Aigostar devices in pairing mode via Bluetooth (when the Home Assistant bluetooth integration is active) and via WiFi (devices reported by already-bound devices on the LAN)."
+    },
+    "discover_bluetooth": {
+      "name": "Discover Bluetooth devices",
+      "description": "Scan for Aigostar BLE devices (Breeze pairing service 0xFEB3) through the Home Assistant bluetooth integration and fire aigosmart_ble_found events."
+    },
+    "set_properties": {
+      "name": "Set raw properties (advanced)",
+      "description": "Advanced / debugging: write TSL properties to a device exactly as given, bypassing the entities. Wrong names or values are rejected by the cloud or ignored by the device, and a wrong value can switch the device or change its settings. Admin only. Property names and ranges are in the device's diagnostics (tsl_model).",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The AigoSmart device to write to."
+        },
+        "properties": {
+          "name": "Properties",
+          "description": "Property identifiers and values as a mapping, for example LightMode: 1."
+        }
+      }
+    }
   }
 }

@@ -9,14 +9,29 @@ produces a burst of turn_on() calls. Verifies:
   * _matches() verifies shadow consistency properly
 """
 import asyncio
+import importlib.util
 import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..",
-                                "custom_components", "aigosmart"))
 
-from commander import DEBOUNCE, AigoCommander, _matches  # noqa: E402
+# Load the module by path: putting custom_components/aigosmart on sys.path
+# would let the integration's select.py shadow the stdlib "select" module
+# (which asyncio imports) for every test that runs afterwards.
+def _load(name):
+    path = os.path.join(os.path.dirname(__file__), "..", "..",
+                        "custom_components", "aigosmart", f"{name}.py")
+    spec = importlib.util.spec_from_file_location(f"_aigosmart_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses look the module up here
+    spec.loader.exec_module(module)
+    return module
+
+
+_commander = _load("commander")
+DEBOUNCE = _commander.DEBOUNCE
+AigoCommander = _commander.AigoCommander
+_matches = _commander._matches
 
 
 class FakeHass:
@@ -202,6 +217,19 @@ class TestCommander(unittest.TestCase):
 
         run(scenario())
         self.assertEqual(client.writes, [{"HSVColor": {"Hue": 0}, "LightMode": 0}])
+
+
+    def test_one_per_write_splits_batches(self):
+        client = FakeClient()
+        cmd = AigoCommander(FakeHass(), client, "iot1")
+        cmd.one_per_write = True
+
+        async def scenario():
+            await cmd.async_send({"mode": 1, "WaterGear": 3})
+            await cmd.async_flush()
+
+        run(scenario())
+        self.assertEqual(client.writes, [{"mode": 1}, {"WaterGear": 3}])
 
 
 if __name__ == "__main__":

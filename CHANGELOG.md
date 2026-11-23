@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+### Requirements
+
+- Still Home Assistant **2024.11.0** or newer (unchanged); nothing in this release needs a newer version. The climate / water heater temperature properties that Home Assistant deprecates for 2027.11 will be migrated in a later release: the replacement API only exists from Home Assistant 2026.11.
+
+### Added
+
+- Devices the integration can't create entities for yet (robot vacuums, cameras, litter boxes, ...) now get a **Repairs** issue in Settings → System → Repairs: one per productKey, naming the devices, with a *Learn more* link to the device-support form. It disappears by itself once a newer version supports the device, or when the device is removed from the account. Translated to English and Spanish.
+- Pet feeder: **Feed** button and **Feed portions** setting (1-24, from the device TSL) for manual feeding ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)). Only pressing Feed dispenses; the portions setting is local, restored after a restart, and never sent on its own. Also a **Voice on feed** switch and approximate grams fed today. Thanks to [@emanuelrg123](https://github.com/emanuelrg123) for the device diagnostics and the before/after capture of a manual feed.
+- Pet water fountain: **Reset filter** and **Reset cleaning** buttons ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)).
+- Advanced action **`aigosmart.set_properties`** (admin only): write raw TSL properties to a device, e.g. `{"WaterGear": 3}`, to test what a new or misbehaving device accepts without waiting for a release. Input is validated (non-empty mapping of property to number/string/boolean/object/list, at most 20). Errors from the cloud are shown in the UI, and the device is re-polled right after. All actions now have English and Spanish translations.
+
+### Changed
+
+- Pet fountain / feeder status codes now have names taken from the device TSL (e.g. feeder error `low_food` / `food_jammed` / `low_battery`, feed state `feeding`, power source `mains` / `battery`, fountain water status `low_water`); unknown codes still show the raw number, and the code is kept as an attribute. Entity names lose the "code" suffix; entity IDs don't change. The TSL of pet devices is now fetched once, and write controls are skipped if the TSL marks a property read-only.
+- Pet fountain: every write now carries a single property (two quick changes are sent one after the other), as with the fan-light and colour fixes, while the cause of ignored fountain commands is investigated ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)).
+
+### Fixed
+
+- Entities that depend on a device property (aquarium switches, pump speed and scenes, fan key-beep, temperature/humidity sensors) were only created if that property was already known at startup, e.g. not when the device was offline during the first poll. They are now created as soon as the property shows up. Fan timers and kettles, which were only created at startup, now also appear for devices added later. Nothing is duplicated, and unique IDs are unchanged.
+- The fan timer showed 0 until the next poll after a restart; it now shows the device value straight away.
+- Changing the brightness of a light in colour mode turned it white ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)). The integration wrote the separate brightness property, which drives the white channel. In colour mode it now rewrites the colour with the new brightness (the colour's Value) and keeps the hue and saturation. Brightness in colour mode is also read back from the colour, so the slider no longer jumps. Thanks to [@Loginbug](https://github.com/Loginbug) for confirming the colour fix and reporting this.
+
+### Removed
+
+- The unused `DeviceRegistry.sync()` (internal; entity creation never called it).
+
 ## [0.9.1] - 2026-11-23
 
 ### Fixed

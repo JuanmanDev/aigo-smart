@@ -31,7 +31,8 @@ from .const import (
     PROP_KETTLE_TARGET,
     PROP_KETTLE_TEMP,
 )
-from .coordinator import AigoDataUpdateCoordinator
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
+from .discovery import DeviceRegistry
 from .helpers import is_kettle_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,12 +45,25 @@ async def async_setup_entry(
 ) -> None:
     state = hass.data[DOMAIN][entry.entry_id]
     coordinator: AigoDataUpdateCoordinator = state["coordinator"]
+    registry: DeviceRegistry = state["registry"]
+    registry.register("water_heater")
+    known = registry._known["water_heater"]
 
-    entities = []
-    for dev in coordinator.devices:
-        if is_kettle_device(dev):
-            entities.append(AigoSmartKettle(coordinator, dev, state))
-    async_add_entities(entities)
+    @callback
+    def _async_handle_new(*_args) -> None:
+        # Kettles present at startup and added later
+        new = []
+        for dev in coordinator.devices:
+            iot_id = dev.get("iotId", "")
+            if iot_id and is_kettle_device(dev) and iot_id not in known:
+                known.add(iot_id)
+                new.append(AigoSmartKettle(coordinator, dev, state))
+        if new:
+            async_add_entities(new)
+
+    _async_handle_new()
+    entry.async_on_unload(
+        hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_new))
 
 
 class AigoSmartKettle(CoordinatorEntity, WaterHeaterEntity):
