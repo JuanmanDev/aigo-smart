@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-23
+
 ### Added
 
 - Pet water fountains (cloud category `petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza S40101N34) ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)): **Pump** switch, **Mode** (continuous / intermittent) and **Flow** (low / medium / high) selects, **Water level**, plus diagnostic sensors for days until filter change / cleaning, their intervals, and the water-status and error codes.
@@ -46,6 +48,12 @@
 - Wrong password, wrong or expired code, and network errors now show distinct messages (previously all "Failed to connect").
 - The single-use verification code is no longer stored in the config entry.
 
+## [0.6.4] - 2026-10-24
+
+### Fixed
+
+- CI: line continuation in the unit-test command.
+
 ## [0.6.3] - 2026-10-24
 
 ### Fixed
@@ -64,6 +72,30 @@
   - Offline devices become unavailable within about one poll after the cloud marks them offline. The stale cloud shadow is no longer polled for them.
   - A single failed status query keeps the previous verdict; two in a row mark the device offline.
   - Online/offline transitions are logged at INFO level.
+
+## [0.6.1] - 2026-10-06
+
+### Changed
+
+- README: aquarium screenshot and credit to [@bduartept1](https://github.com/bduartept1).
+
+## [0.6.0] - 2026-10-06
+
+### Added
+
+- Aquarium: water-pump speed select and RGB scene controls; each aquarium switch writes only its own property.
+
+## [0.5.3] - 2026-10-05
+
+### Fixed
+
+- Aquarium: `is_aquarium_device` imports, a sensor `KeyError` and the initial state.
+
+## [0.5.2] - 2026-10-05
+
+### Fixed
+
+- Aquarium switch classes contained escaped backslashes.
 
 ## [0.5.0] - 2026-10-05
 
