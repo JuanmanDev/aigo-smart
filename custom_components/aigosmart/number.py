@@ -13,8 +13,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .airfryer import make_airfryer_entities
 from .commander import get_commander
-from .const import DOMAIN, FANLIGHT_TIMER_MAX_MIN, PROP_FAN_TIMER, STATUS_ONLINE
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .const import DOMAIN, FANLIGHT_TIMER_MAX_MIN, PROP_FAN_TIMER
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry
 from .helpers import is_fan_device, is_fan_light_device
 

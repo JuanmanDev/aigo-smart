@@ -19,11 +19,13 @@ jobs:
         id: bump
         run: |
           LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          COMMITS=$(git log ${LAST}..HEAD --pretty=format:"%s")
+          git log ${LAST}..HEAD --pretty=format:"%s" > "$RUNNER_TEMP/subjects.txt"
+          BODIES=$(git log ${LAST}..HEAD --pretty=format:"%B")
+          # breaking: "type!:" / "type(scope)!:" subject or a BREAKING CHANGE footer
           BUMP="patch"
-          if echo "$COMMITS" | grep -qE "^feat(\(.+\))?!?:|^feat!:"; then BUMP="major"; echo "$COMMITS" | grep -qE "^feat!:" && BUMP="major" || BUMP="minor"; fi
-          if echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then BUMP="minor"; fi
-          if echo "$COMMITS" | grep -qE "^feat!:"; then BUMP="major"; fi
+          if grep -qE "^feat(\(.+\))?:" "$RUNNER_TEMP/subjects.txt"; then BUMP="minor"; fi
+          if grep -qE "^[a-z]+(\(.+\))?!:" "$RUNNER_TEMP/subjects.txt" \
+             || echo "$BODIES" | grep -qE "^BREAKING[ -]CHANGE:"; then BUMP="major"; fi
           echo "bump=$BUMP" >> $GITHUB_OUTPUT
 
       - name: Bump version
@@ -46,11 +48,17 @@ jobs:
           json.dump(d, open(p, 'w'), indent=2)
           EOF
 
+      - name: File CHANGELOG [Unreleased] under the new version
+        run: |
+          python .github/scripts/changelog_release.py \
+            "${{ steps.version.outputs.new }}" "$(date -u +%Y-%m-%d)" \
+            "$RUNNER_TEMP/subjects.txt"
+
       - name: Commit + tag + release
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add custom_components/aigosmart/manifest.json
+          git add custom_components/aigosmart/manifest.json CHANGELOG.md
           git commit -m "chore(release): v${{ steps.version.outputs.new }}" || exit 0
           git tag "v${{ steps.version.outputs.new }}"
           git push && git push --tags

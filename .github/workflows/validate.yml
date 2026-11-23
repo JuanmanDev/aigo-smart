@@ -15,6 +15,18 @@ jobs:
       - name: HA Core Community Validation
         uses: home-assistant/actions/hassfest@master
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install ruff
+        run: pip install ruff==0.16.6
+      - name: Ruff
+        run: ruff check --output-format=github .
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -25,17 +37,7 @@ jobs:
       - name: Install deps
         run: pip install cryptography
       - name: Run unit tests
+        # every python_client/tests/test_*.py, so a new test file can't be
+        # forgotten in a hand-maintained list
         run: |
-          python -m unittest python_client.tests.test_unit \
-                 python_client.tests.test_airfryer \
-                 python_client.tests.test_pet \
-                 python_client.tests.test_discovery \
-                 python_client.tests.test_ble \
-                 python_client.tests.test_breeze \
-                 python_client.tests.test_color \
-                 python_client.tests.test_commander \
-                 python_client.tests.test_coordinator_cache \
-                 python_client.tests.test_light_state \
-                 python_client.tests.test_fan_light \
-                 python_client.tests.test_status \
-                 python_client.tests.test_session -v
+          python -m unittest -v $(ls python_client/tests/test_*.py | sed 's#/#.#g; s#\.py$##')

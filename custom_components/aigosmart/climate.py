@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .commander import get_commander
 from .const import DOMAIN
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry, platform_for_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,7 +75,13 @@ class AigoSmartClimate(CoordinatorEntity, ClimateEntity):
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL, HVACMode.HEAT,
                         HVACMode.FAN_ONLY, HVACMode.DRY]
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    # TURN_ON / TURN_OFF: without them HA rejects climate.turn_on/turn_off
+    # (same as the fans before 0.8.0)
+    _attr_supported_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TURN_ON
+        | ClimateEntityFeature.TURN_OFF
+    )
 
     def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
                  state: dict | None = None) -> None:
@@ -183,6 +189,14 @@ class AigoSmartClimate(CoordinatorEntity, ClimateEntity):
                 _LOGGER.warning("AigoSmart set_hvac_mode failed for %s: %s",
                                 self._iot_id, exc)
                 self._coordinator.mark_device_offline(self._iot_id)
+
+    async def async_turn_on(self) -> None:
+        """Power on in the device's working mode (DRY for dehumidifiers)."""
+        await self.async_set_hvac_mode(
+            HVACMode.DRY if self._is_dehumidifier else HVACMode.COOL)
+
+    async def async_turn_off(self) -> None:
+        await self.async_set_hvac_mode(HVACMode.OFF)
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""

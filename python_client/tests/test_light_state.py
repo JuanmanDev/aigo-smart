@@ -22,6 +22,7 @@ sys.modules["homeassistant.components.light"] = MagicMock()
 
 from enum import StrEnum
 
+
 class ColorMode(StrEnum):
     UNKNOWN = "unknown"
     ONOFF = "onoff"
@@ -56,6 +57,7 @@ sys.modules["homeassistant.components.light"].LightEntity = MockLightEntity
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
 
 import importlib.util
+
 spec = importlib.util.spec_from_file_location(
     "custom_components.aigosmart.light",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "custom_components", "aigosmart", "light.py"))
@@ -211,6 +213,77 @@ class TestFanLightLight(unittest.IsolatedAsyncioTestCase):
         await light.async_turn_off()
         items = light.hass.async_add_executor_job.call_args[0][2]
         self.assertEqual(items, {"powerstate_1": 0})
+
+
+
+class TestColourWriteOrdering(unittest.IsolatedAsyncioTestCase):
+    """#2 / #3: mode goes in a separate write after the colour, only on change."""
+
+    def setUp(self):
+        self.coordinator = MagicMock()
+        self.coordinator.tsl_models = {}
+        self.coordinator.is_device_online.return_value = True
+
+    def _light(self, cls, dev, props):
+        self.coordinator.props = {dev["iotId"]: props}
+        light = cls(self.coordinator, dev, None)
+        light._commander = MagicMock()
+        light._commander.async_send = AsyncMock()
+        return light
+
+    def sent(self, light):
+        args, kwargs = light._commander.async_send.call_args
+        return args[0], kwargs.get("followup")
+
+    FANLIGHT = {"iotId": "fl", "productName": "Fan light  ", "categoryKey": "fanLight",
+                "netType": "NET_BT", "productKey": "a180PpkuyP6"}
+    LAMP_ON_COLOUR = {"powerstate_1": 1, "brightness": 100, "colorTemperature": 28,
+                      "LightMode": 1, "HSVColor": {"Hue": 60, "Saturation": 96, "Value": 100}}
+    WIFI = {"iotId": "spot", "productKey": "a1CuHgtZg6v", "netType": "NET_WIFI"}
+    WIFI_WHITE = {"LightSwitch": 1, "Brightness": 60, "ColorTemperature": 100,
+                  "LightMode": 0, "HSVColor": {"Hue": 306, "Saturation": 77, "Value": 100}}
+
+    async def test_fanlight_red_while_in_colour_mode_sends_colour_only(self):
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, dict(self.LAMP_ON_COLOUR))
+        await light.async_turn_on(hs_color=(0, 100))
+        items, followup = self.sent(light)
+        self.assertEqual(items, {"HSVColor": {"Hue": 0, "Saturation": 100, "Value": 100}})
+        self.assertIsNone(followup)
+
+    async def test_fanlight_colour_from_white_mode_switches_mode_afterwards(self):
+        props = dict(self.LAMP_ON_COLOUR, LightMode=0)
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, props)
+        await light.async_turn_on(hs_color=(240, 100))
+        items, followup = self.sent(light)
+        self.assertEqual(items, {"HSVColor": {"Hue": 240, "Saturation": 100, "Value": 100}})
+        self.assertEqual(followup, {"LightMode": 1})
+
+    async def test_fanlight_off_lamp_gets_power_with_colour(self):
+        props = dict(self.LAMP_ON_COLOUR, powerstate_1=0)
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, props)
+        await light.async_turn_on(hs_color=(120, 100))
+        items, _ = self.sent(light)
+        self.assertEqual(items["powerstate_1"], 1)
+
+    async def test_fanlight_cct_from_colour_mode(self):
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, dict(self.LAMP_ON_COLOUR))
+        await light.async_turn_on(color_temp_kelvin=4600)
+        items, followup = self.sent(light)
+        self.assertEqual(items, {"colorTemperature": 50})
+        self.assertEqual(followup, {"LightMode": 0})
+
+    async def test_fanlight_plain_turn_on_while_on_resyncs_power(self):
+        light = self._light(light_mod.AigoSmartFanLightLight, self.FANLIGHT, dict(self.LAMP_ON_COLOUR))
+        await light.async_turn_on()
+        self.assertEqual(self.sent(light), ({"powerstate_1": 1}, None))
+
+    async def test_wifi_light_keeps_switch_and_moves_mode_to_followup(self):
+        light = self._light(AigoSmartLight, self.WIFI, dict(self.WIFI_WHITE))
+        await light.async_turn_on(hs_color=(120, 100), brightness=153)
+        items, followup = self.sent(light)
+        self.assertEqual(items, {"LightSwitch": 1, "Brightness": 60,
+                                 "HSVColor": {"Hue": 120, "Saturation": 100, "Value": 60}})
+        self.assertEqual(followup, {"LightMode": 1})
 
 
 if __name__ == "__main__":

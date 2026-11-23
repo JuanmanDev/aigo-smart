@@ -4,3 +4,8 @@ target-version = "py311"
 [lint]
 select = ["E", "F", "W", "I"]
 ignore = ["E501"]
+
+[lint.per-file-ignores]
+# Tests must install the Home Assistant stubs in sys.modules before importing
+# the integration, so their imports cannot all sit at the top of the file.
+"python_client/tests/*" = ["E402"]

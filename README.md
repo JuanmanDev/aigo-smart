@@ -8,10 +8,10 @@
 [![Validate](https://img.shields.io/github/actions/workflow/status/JuanmanDev/aigo-smart/validate.yml?branch=master&style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/JuanmanDev/aigo-smart?style=for-the-badge)](https://github.com/JuanmanDev/aigo-smart/releases)
-[![Tests](https://img.shields.io/badge/tests-52%2F52-brightgreen?style=for-the-badge)](python_client/tests)
+[![Tests](https://img.shields.io/github/actions/workflow/status/JuanmanDev/aigo-smart/validate.yml?branch=master&label=tests&style=for-the-badge)](python_client/tests)
 
 Control your **Aigostar smart-home devices** (lights, plugs, heaters, air
-conditioners, fans, and 50+ other categories — 498 supported products) directly
+conditioners, fans, fan-lights, air fryers, pet fountains and feeders...) directly
 from Home Assistant — via the **AigoSmart cloud** and, where the device allows
 it, **locally over your LAN**.
 
@@ -58,6 +58,9 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
   [hass-aigosmart](https://github.com/andreazllin/hass-aigosmart)
 - **Fans done right** — speed 1-3, preset modes (Normal/Natural/Sleep),
   oscillation, auto-off timer (number), key-beep switch
+- **Ceiling fan-lights** (`fanLight`, e.g. `a180PpkuyP6` / `a1aeYLqeLsb`) —
+  separate Fan (6 speeds, Normal/Natural/Sleep/Fresh, direction) and Light
+  (brightness, colour temperature, colour on RGBCCT) entities, timer in minutes
 - **Kettles** — exposed as water_heater (target temperature, on/off)
 - **Air fryers** (`a1MqVKrp9JA`) — start/stop, program, temperature, cook
   time, flip reminder and delay start, plus status / error / flip / lid
@@ -214,19 +217,37 @@ Full technical details: [`analysis/REVERSE_ENGINEERING.md`](analysis/REVERSE_ENG
 
 ## Supported devices
 
-All 498 products that work with the AigoSmart app — see
-[`analysis/pk_catalog.json`](analysis/pk_catalog.json) for the complete
-productKey → category catalog extracted from the APK, including:
+The bundled [`analysis/pk_catalog.json`](analysis/pk_catalog.json) lists the
+**498 products** known to the AigoSmart app (productKey → category, extracted
+from the APK). About 480 of them belong to a category this integration maps
+to Home Assistant entities. That is not the same as tested: lights and plugs
+use common properties and usually just work, while appliances often have
+model-specific properties.
 
-| Category | Examples |
+**Confirmed by users**
+
+| Device | Entities |
 |---|---|
-| Lights (200+) | RGB lamps, ceiling lights, downlights, strips, filament, spots, mesh lights |
-| Power | Sockets, metered sockets, power strips, circuit breakers, curtain switches |
-| Climate | Air conditioners, heaters, dehumidifiers, oil-filled radiators, pet thermostats |
-| Appliances | Air fryers, ovens, kettles, humidifiers, purifiers, dryers |
-| Pets | Feeders, water dispensers, cat litter boxes, cat beds |
-| Sensors | Door contacts, smoke alarms |
-| Other | Cameras, robotic vacuums, aquariums, string lights, solar lamps |
+| Wi-Fi (TG7100C) and BLE Mesh lights, e.g. Downlight RGB CCT `a1uh0UxUu3Z` | light: on/off, brightness, colour temperature, colour |
+| Ceiling fan-lights `a180PpkuyP6` (RGBCCT), `a1aeYLqeLsb` (CCT) | fan + light + timer + key beep |
+| Tower fan `a1mZFNZz7pq` | fan, timer, key beep |
+| Sockets / plugs / switches (`PowerSwitch`, `Switch`, `LightSwitch`) | switch |
+| Smart aquarium `a191KWgv5BZ` | light, switches, pump speed, scenes, sensors |
+| Air fryer `a1MqVKrp9JA` | cooking switch, program, temperature/times, sensors |
+| Pet water fountain `a163VQp0e0e` | pump, mode, flow, water level, filter/cleaning days |
+| Pet feeder `a1xEttfYqF2` | last feeding, portions today, schedule, switches, battery |
+
+**Mapped but less tested:** air conditioners, heaters, dehumidifiers,
+oil-filled radiators (climate: power and target temperature), kettles
+(water_heater), door/smoke sensors, other air fryers, fountains and feeders.
+
+**Not supported yet:** cameras, robot vacuums, cat litter boxes, humidifiers,
+air purifiers, ovens, drying ovens and steam fryers. These are listed in the
+log as *not supported yet* at startup.
+
+Something missing or wrong? Open a
+[device support request](https://github.com/JuanmanDev/aigo-smart/issues/new/choose)
+and attach the device's diagnostics.
 
 ## Troubleshooting
 

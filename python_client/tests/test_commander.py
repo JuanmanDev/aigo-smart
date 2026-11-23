@@ -11,9 +11,7 @@ produces a burst of turn_on() calls. Verifies:
 import asyncio
 import os
 import sys
-import time
 import unittest
-from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..",
                                 "custom_components", "aigosmart"))
@@ -175,6 +173,35 @@ class TestCommander(unittest.TestCase):
         self.assertFalse(_matches({"X": None}, {"X": 5}))
         # commanded None -> don't care, any shadow value confirms
         self.assertTrue(_matches({"X": 5}, {"X": None}))
+
+    def test_matches_quantised_colour(self):
+        # mesh lamps report 16-bit quantised values: 9 -> 8.99794, 100 -> 99.998
+        shadow = {"HSVColor": {"Hue": 8.99794, "Saturation": 66.9993133, "Value": 99.9984741}}
+        self.assertTrue(_matches(shadow, {"HSVColor": {"Hue": 9, "Saturation": 67, "Value": 100}}))
+        self.assertFalse(_matches(shadow, {"HSVColor": {"Hue": 4, "Saturation": 67, "Value": 100}}))
+
+    def test_followup_written_after_main_batch(self):
+        client = FakeClient()
+        cmd = AigoCommander(FakeHass(), client, "iot1")
+
+        async def scenario():
+            await cmd.async_send({"HSVColor": {"Hue": 0}}, followup={"LightMode": 1})
+            await cmd.async_flush()
+
+        run(scenario())
+        self.assertEqual(client.writes, [{"HSVColor": {"Hue": 0}}, {"LightMode": 1}])
+
+    def test_direct_write_supersedes_followup(self):
+        client = FakeClient()
+        cmd = AigoCommander(FakeHass(), client, "iot1")
+
+        async def scenario():
+            await cmd.async_send({"HSVColor": {"Hue": 0}}, followup={"LightMode": 1})
+            await cmd.async_send({"LightMode": 0})
+            await cmd.async_flush()
+
+        run(scenario())
+        self.assertEqual(client.writes, [{"HSVColor": {"Hue": 0}, "LightMode": 0}])
 
 
 if __name__ == "__main__":

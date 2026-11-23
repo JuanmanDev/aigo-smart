@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from aigosmart.util import encrypt_password, _aes_cbc_zeroiv_pure
-from aigosmart.local import build_coap, parse_coap, COAP_CONFIRMABLE, CODE_POST
+from aigosmart.local import COAP_CONFIRMABLE, CODE_POST, build_coap, parse_coap
+from aigosmart.util import _aes_cbc_zeroiv_pure, encrypt_password
 
 
 class TestUtil(unittest.TestCase):
@@ -31,8 +31,8 @@ class TestUtil(unittest.TestCase):
 
     def test_encrypt_password_matches_reference(self):
         """Cross-check pure fallback against cryptography library result."""
-        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
         from cryptography.hazmat.primitives import padding as sym_padding
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
         key = b"tCx8BA0yKVr+NbBChH928URAV90=0000"
         pw = "secret123"

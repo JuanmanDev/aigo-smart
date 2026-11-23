@@ -27,7 +27,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .commander import get_commander
 from .const import (
     DOMAIN,
-    PROP_KETTLE_KEEP_WARM,
     PROP_KETTLE_SWITCH,
     PROP_KETTLE_TARGET,
     PROP_KETTLE_TEMP,

@@ -34,6 +34,7 @@ sys.modules["homeassistant.helpers.update_coordinator"].UpdateFailed = Exception
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import importlib.util
+
 spec = importlib.util.spec_from_file_location(
     "custom_components.aigosmart.coordinator",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "custom_components", "aigosmart", "coordinator.py"))

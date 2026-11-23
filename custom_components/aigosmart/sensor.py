@@ -16,7 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .airfryer import make_airfryer_entities
 from .const import AQUARIUM_ERROR_CODES, AQUARIUM_FEED_STATE, AQUARIUM_WATER_PUMP_STATUS, DOMAIN
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry
 from .helpers import is_aquarium_device
 from .pet import setup_pet_platform

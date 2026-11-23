@@ -1,0 +1,81 @@
+name: Device support request
+description: A device shows no entities, the wrong ones, or controls that do nothing
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Support for a new device is built from its **data model (TSL)** and its **current values**, both of which are in the diagnostics file. A before/after pair around one change in the AigoSmart app shows which property does what.
+
+        🔒 **Before attaching anything**, check for and replace with `xxx`: your email / username, passwords, tokens, `accessKey`, `iotId`, `identityAlias`, `identityId`, `deviceName`, IP and MAC addresses.
+  - type: input
+    id: integration_version
+    attributes:
+      label: AigoSmart integration version
+      description: Shown on the integration card. **Restart Home Assistant** after a HACS update before testing.
+      placeholder: "0.9.1"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.11.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: install_type
+    attributes:
+      label: Installation type
+      options:
+        - Home Assistant OS
+        - Container (Docker)
+        - Core (Python venv)
+        - Supervised
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device model, productKey and categoryKey
+      description: productKey / categoryKey are in the diagnostics file, under `cloud`. The startup log also prints them for unsupported devices.
+      placeholder: "Pet Water Fountain, a163VQp0e0e, petWaterFountain"
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What do you see in Home Assistant today?
+      description: No entities, entities that do nothing, wrong values...
+    validations:
+      required: true
+  - type: textarea
+    id: app
+    attributes:
+      label: What does the AigoSmart app offer?
+      description: The controls and values on the device's screen in the app. Screenshots help a lot (drag them here).
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Device diagnostics (with TSL)
+      description: |
+        Open the device (Settings → Devices & services → AigoSmart → Devices → your device) → ⋮ → **Download diagnostics**, and drag the `.json` file here.
+        If you can, add a **second** file downloaded about a minute after changing one setting in the app, and say what you changed.
+    validations:
+      required: true
+  - type: textarea
+    id: debug_log
+    attributes:
+      label: Debug log (optional)
+      description: If a control in Home Assistant does nothing, enable debug logging on the integration page (⋮ → Enable debug logging), use the control, disable it again and attach the file.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I removed personal data (email, tokens, iotId, deviceName, IP/MAC) from the attachments.
+          required: true

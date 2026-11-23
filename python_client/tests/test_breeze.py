@@ -8,15 +8,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from aigosmart.breeze_provision import (  # noqa: E402
     CMD_SYS,
+    TLV_DEVICE_NAME,
+    TLV_PRODUCT_KEY,
+    TLV_RANDOM,
+    TLV_SIGN,
     _breeze_message,
     _parse_breeze_response,
     parse_scan_record,
     tlv_encode,
     tlv_parse,
-    TLV_DEVICE_NAME,
-    TLV_PRODUCT_KEY,
-    TLV_RANDOM,
-    TLV_SIGN,
 )
 
 

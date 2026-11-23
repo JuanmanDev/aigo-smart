@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
@@ -22,7 +21,7 @@ from .const import (
     PROP_AQUARIUM_LIGHT_SCENE_ID,
     PROP_AQUARIUM_PUMP_LEVEL,
 )
-from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry
 from .helpers import is_aquarium_device
 from .pet import setup_pet_platform

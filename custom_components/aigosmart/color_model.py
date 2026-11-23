@@ -166,8 +166,13 @@ class ColorSpec:
                 self.members[ROLE_BLUE]: round(b * self.max_for(ROLE_BLUE)),
             }
 
+        # 360 deg is red, the same as 0: send 0 rather than the range maximum
+        hue_max = self.max_for(ROLE_HUE)
+        raw_hue = round((hue % 360.0) / 360.0 * hue_max)
+        if raw_hue >= hue_max:
+            raw_hue = 0
         out: dict[str, Any] = {
-            self.members[ROLE_HUE]: round(hue / 360.0 * self.max_for(ROLE_HUE)),
+            self.members[ROLE_HUE]: raw_hue,
             self.members[ROLE_SATURATION]: round(saturation / 100.0 * self.max_for(ROLE_SATURATION)),
         }
         role = ROLE_LIGHTNESS if self.encoding == ENCODING_HSL else ROLE_VALUE

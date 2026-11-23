@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Colour changes on fan-light lamps and other colour lights were sometimes ignored (most visibly red) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2), [#3](https://github.com/JuanmanDev/aigo-smart/issues/3)). Every colour write bundled the value with a redundant switch-on and the white/colour `LightMode`. The cloud accepted it, but the lamp could drop the colour. The white/colour mode is now written in a separate write after the colour or colour temperature, and only when it changes. Fan-light lamps no longer get a redundant `powerstate_1: 1` while on, which matches the fan-speed fix. Thanks to [@Loginbug](https://github.com/Loginbug) for the debug log that showed it.
+- Hue 360 (or anything that rounds to it) is now sent as 0, which is the same red.
+- The post-write check compared the device's quantised colour values by truncation (`8.998` vs `9`), so every colour write looked unconfirmed. It now compares with a small tolerance.
+- `climate.turn_on` / `climate.turn_off` were rejected for AigoSmart climate devices: the entity did not declare `TURN_ON` / `TURN_OFF` support. They now map to the device's power property, like the HVAC mode.
+
+### Changed
+
+- CI now runs every test file (including `test_aquarium.py`, which was broken) and `ruff check`. The existing lint findings are fixed.
+- The release workflow now files the `[Unreleased]` CHANGELOG section under the new version in the release commit, and detects `BREAKING CHANGE` footers.
+- Bug reports and device-support requests now use GitHub issue forms that ask for the versions, productKey / categoryKey, debug log and diagnostics, with a redaction reminder.
+- README: supported devices are listed by what actually gets entities; the 498-product catalog is described as a catalog, not a support list.
+- `hacs.json` now requires Home Assistant 2024.11.0, the oldest version the integration actually works with (re-authentication / reconfigure flows).
+
+## [0.9.0] - 2026-11-23
+
 ### Added
 
 - Pet water fountains (cloud category `petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza S40101N34) ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)): **Pump** switch, **Mode** (continuous / intermittent) and **Flow** (low / medium / high) selects, **Water level**, plus diagnostic sensors for days until filter change / cleaning, their intervals, and the water-status and error codes.
@@ -46,6 +63,12 @@
 - Wrong password, wrong or expired code, and network errors now show distinct messages (previously all "Failed to connect").
 - The single-use verification code is no longer stored in the config entry.
 
+## [0.6.4] - 2026-10-24
+
+### Fixed
+
+- CI: line continuation in the unit-test command.
+
 ## [0.6.3] - 2026-10-24
 
 ### Fixed
@@ -64,6 +87,30 @@
   - Offline devices become unavailable within about one poll after the cloud marks them offline. The stale cloud shadow is no longer polled for them.
   - A single failed status query keeps the previous verdict; two in a row mark the device offline.
   - Online/offline transitions are logged at INFO level.
+
+## [0.6.1] - 2026-10-06
+
+### Changed
+
+- README: aquarium screenshot and credit to [@bduartept1](https://github.com/bduartept1).
+
+## [0.6.0] - 2026-10-06
+
+### Added
+
+- Aquarium: water-pump speed select and RGB scene controls; each aquarium switch writes only its own property.
+
+## [0.5.3] - 2026-10-05
+
+### Fixed
+
+- Aquarium: `is_aquarium_device` imports, a sensor `KeyError` and the initial state.
+
+## [0.5.2] - 2026-10-05
+
+### Fixed
+
+- Aquarium switch classes contained escaped backslashes.
 
 ## [0.5.0] - 2026-10-05
 

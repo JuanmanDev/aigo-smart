@@ -53,6 +53,7 @@ sys.modules.setdefault("homeassistant.exceptions", mock.MagicMock())
 sys.modules["homeassistant.exceptions"].ConfigEntryAuthFailed = ConfigEntryAuthFailed
 
 import importlib.util
+
 spec = importlib.util.spec_from_file_location(
     "custom_components.aigosmart.const",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",
