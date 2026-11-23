@@ -97,7 +97,7 @@
         },
         "properties": {
           "name": "Propiedades",
-          "description": "Identificadores de propiedad y valores, por ejemplo {\"LightMode\": 1}."
+          "description": "Identificadores de propiedad y valores como mapa, por ejemplo LightMode: 1."
         }
       }
     }

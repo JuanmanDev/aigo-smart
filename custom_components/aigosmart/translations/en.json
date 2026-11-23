@@ -97,7 +97,7 @@
         },
         "properties": {
           "name": "Properties",
-          "description": "Property identifiers and values, for example {\"LightMode\": 1}."
+          "description": "Property identifiers and values as a mapping, for example LightMode: 1."
         }
       }
     }
