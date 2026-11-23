@@ -27,6 +27,33 @@ def is_fan_light_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> 
     )
 
 
+def _category(dev: dict, pk_catalog: dict[str, str] | None) -> str:
+    category = (dev.get("categoryKey") or "").strip().lower()
+    if not category and pk_catalog:
+        category = pk_catalog.get(dev.get("productKey", ""), "").lower()
+    return category
+
+
+def is_pet_fountain_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> bool:
+    """Pet water fountain (cloud "petWaterFountain", catalog "WaterDispenser")."""
+    product = (dev.get("productName") or "").strip().lower()
+    return (
+        _category(dev, pk_catalog) in ("petwaterfountain", "waterdispenser")
+        or "pet water fountain" in " ".join(product.split())
+        or "宠物饮水机" in product
+    )
+
+
+def is_pet_feeder_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> bool:
+    """Pet feeder (cloud "petFeeder", catalog "Feeder")."""
+    product = (dev.get("productName") or "").strip().lower()
+    return (
+        _category(dev, pk_catalog) in ("petfeeder", "feeder")
+        or "pet feeder" in " ".join(product.split())
+        or "喂食" in product
+    )
+
+
 def is_fan_device(dev: dict) -> bool:
     category = (dev.get("categoryKey") or "").strip().lower()
     product = (dev.get("productName") or "").strip().lower()

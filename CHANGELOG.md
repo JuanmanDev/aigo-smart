@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Pet water fountains (cloud category `petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza S40101N34) ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)): **Pump** switch, **Mode** (continuous / intermittent) and **Flow** (low / medium / high) selects, **Water level**, plus diagnostic sensors for days until filter change / cleaning, their intervals, and the water-status and error codes.
+- Pet feeders (cloud category `petFeeder`, e.g. `a1xEttfYqF2`) ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)): **Last feeding** (timestamp + portions), **Portions today**, **Feeding plan** (read-only; the schedule is in the attributes), **Indicator light** and **Slow feed** switches, **Battery**, and diagnostic feed-state / battery-state / error codes. Manual feeding is not exposed until its identifier is confirmed. Thanks to [@emanuelrg123](https://github.com/emanuelrg123) for the diagnostics and app screenshots.
+- Integration-level diagnostics now include each product's TSL model (`tsl_models`), so one download is enough to add support for a new device.
+
+## [0.8.1] - 2026-11-23
+
 ### Fixed
 
 - Fan-light speed changes did not move the motor ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)). The BLE Mesh fan-lights ignore a `windspeed` sent together with a redundant `powerstate_2: 1`, and ignore any manual speed while a breeze preset (`mode_2` Natural / Sleep / Fresh) is active. A speed change on a running fan-light now sends only `windspeed`, plus `mode_2: 0` when a preset was active. Starting from off still sends power and speed in one write. Selecting a preset sends only `mode_2` while running. Diagnosis by [@davidpla7](https://github.com/davidpla7). Classic fans (tower fan) are unchanged.

@@ -47,6 +47,11 @@ CATEGORY_PLATFORM = {
     "fanlighting": "fanlight", "fanlight": "fanlight",
     # air fryers (composite device - handled by multiple platforms)
     "airfryer": "airfryer",
+    # pet fountains / feeders (composite devices - see pet.py). The cloud
+    # says "petWaterFountain" / "petFeeder", the catalog "WaterDispenser" /
+    # "Feeder".
+    "petwaterfountain": "pet", "waterdispenser": "pet",
+    "petfeeder": "pet", "feeder": "pet",
 }
 
 # Heater-family also climate

@@ -28,6 +28,7 @@ jobs:
         run: |
           python -m unittest python_client.tests.test_unit \
                  python_client.tests.test_airfryer \
+                 python_client.tests.test_pet \
                  python_client.tests.test_discovery \
                  python_client.tests.test_ble \
                  python_client.tests.test_breeze \

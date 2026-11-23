@@ -1,0 +1,517 @@
+"""Pet water fountain and pet feeder entities (issue #4).
+
+Observed on real devices (integration diagnostics + app screenshots from
+the reporter; the full TSL has not been seen yet):
+
+Pet water fountain (categoryKey "petWaterFountain", e.g. a163VQp0e0e,
+"Nobleza S40101N34"):
+  Switch               0/1   pump on/off (app: "Ligar")
+  mode                 enum  0 = continuous; the app's only other choice is
+                             "intermittent" (assumed 1)
+  WaterGear            enum  2 = medium; app offers low / medium / high
+                             (assumed 1 / 2 / 3)
+  FilterRemainderDay   int   days until filter change (app: 13 = 13 days)
+  CleaningRemainderDay int   days until cleaning (app: 10 = 10 days)
+  FilterReplaceTime    int   filter change interval, days
+  DeviceCleaningTime   int   cleaning interval, days
+  waterLevvel          int   water level, % (sic, misspelt in the TSL)
+  WaterStatus, errorCode     codes, meaning unknown (0 seen)
+
+Pet feeder (categoryKey "petFeeder", e.g. a1xEttfYqF2):
+  lampSwitch           0/1   indicator light
+  slowFeed             0/1   slow feeding
+  BatteryPercentage    float backup battery, %
+  batteryState, feedState, errorCode   codes, meaning unknown (0 seen)
+  feedRecord   "<unix>,<portions>:<unix>,<portions>:..."  newest first
+  feedingPlan  "MMHHmmPPEE,..."  hex fields: weekday mask, hour, minute,
+               portions, enabled (verified against the app's schedule:
+               7F0C000201 = every day 12:00, 2 portions, on)
+
+Manual feeding is deliberately not exposed: it is not a property in the
+snapshot (probably a TSL service), and guessing its identifier could make
+the feeder dispense food.
+"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timezone
+from typing import Any
+
+from homeassistant.components.select import SelectEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTime
+from homeassistant.core import callback
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
+
+from .commander import get_commander
+from .const import DOMAIN
+from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
+from .helpers import is_pet_feeder_device, is_pet_fountain_device
+
+_LOGGER = logging.getLogger(__name__)
+
+FOUNTAIN_MODES = {0: "Continuous", 1: "Intermittent"}
+FOUNTAIN_FLOW = {1: "Low", 2: "Medium", 3: "High"}
+
+
+# ------------------------------------------------------------------ parsing --
+
+def parse_feed_record(raw: Any) -> list[tuple[datetime, int]]:
+    """Parse feedRecord into [(utc time, portions)], newest first."""
+    out: list[tuple[datetime, int]] = []
+    if not isinstance(raw, str):
+        return out
+    for entry in raw.split(":"):
+        ts, _, portions = entry.partition(",")
+        try:
+            when = datetime.fromtimestamp(int(ts), timezone.utc)
+            out.append((when, int(portions)))
+        except (ValueError, OverflowError, OSError):
+            continue
+    out.sort(key=lambda item: item[0], reverse=True)
+    return out
+
+
+def portions_since(records: list[tuple[datetime, int]], since: datetime) -> int:
+    return sum(portions for when, portions in records if when >= since)
+
+
+def parse_feeding_plan(raw: Any) -> list[dict[str, Any]]:
+    """Parse feedingPlan ("7F06000401,...") into readable schedule slots."""
+    slots: list[dict[str, Any]] = []
+    if not isinstance(raw, str):
+        return slots
+    for item in raw.split(","):
+        item = item.strip()
+        if len(item) != 10:
+            continue
+        try:
+            mask, hour, minute, portions, enabled = (
+                int(item[i:i + 2], 16) for i in range(0, 10, 2))
+        except ValueError:
+            continue
+        if hour > 23 or minute > 59:
+            continue
+        slots.append({
+            "time": f"{hour:02d}:{minute:02d}",
+            "portions": portions,
+            "enabled": bool(enabled),
+            "every_day": mask == 0x7F,
+            "days_mask": f"{mask:02X}",
+        })
+    return slots
+
+
+# --------------------------------------------------------------- base entity --
+
+class PetEntity(CoordinatorEntity):
+    """Common base: device info, availability, optimistic writes."""
+
+    _attr_has_entity_name = True
+    _prop: str = ""
+    _props: tuple[str, ...] = ()      # accepted identifiers, first match wins
+    _default_name = "Aigo pet device"
+
+    def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
+                 state: dict | None) -> None:
+        super().__init__(coordinator)
+        self._coordinator = coordinator
+        self._iot_id = dev.get("iotId", "")
+        props = coordinator.props.get(self._iot_id, {})
+        self._prop = next((p for p in self.identifiers() if p in props),
+                          self.identifiers()[0])
+        self._attr_unique_id = f"{self._iot_id}_pet_{self.key()}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._iot_id)},
+            name=dev.get("nickName") or dev.get("deviceName") or self._default_name,
+            manufacturer="Aigostar",
+            model=dev.get("productName") or dev.get("productKey") or "pet device",
+        )
+        self._available = coordinator.is_device_online(self._iot_id)
+        self._commander = get_commander(state, self._iot_id) if state else None
+        self._apply(props)
+
+    @classmethod
+    def identifiers(cls) -> tuple[str, ...]:
+        return cls._props or (cls._prop,)
+
+    @classmethod
+    def key(cls) -> str:
+        return cls.identifiers()[0]
+
+    @property
+    def available(self) -> bool:
+        return self._available and self.coordinator.last_update_success
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        props = self._coordinator.props.get(self._iot_id, {})
+        self._available = self._coordinator.is_device_online(self._iot_id)
+        if props and not (self._commander and self._commander.in_skip()):
+            self._apply(props)
+        self.async_write_ha_state()
+
+    def _apply(self, props: dict) -> None:
+        raise NotImplementedError
+
+    async def _async_write(self, value: int) -> None:
+        items = {self._prop: int(value)}
+        self._coordinator.async_set_optimistic_props(
+            self._iot_id, items, hold_duration=5.0)
+        self._apply(self._coordinator.props.get(self._iot_id, {}))
+        self.async_write_ha_state()
+        if self._commander is not None:
+            await self._commander.async_send(items)
+            return
+        try:
+            await self.hass.async_add_executor_job(
+                self._coordinator.client.set_properties, self._iot_id, items)
+        except Exception as exc:
+            _LOGGER.warning("AigoSmart pet device write %s failed for %s: %s",
+                            items, self._iot_id, exc)
+            self._coordinator.clear_optimistic_props(self._iot_id)
+            await self._coordinator.async_request_refresh()
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._commander is not None:
+            await self._commander.async_flush()
+        await super().async_will_remove_from_hass()
+
+
+# ------------------------------------------------------------------ switches --
+
+class PetSwitch(PetEntity, SwitchEntity):
+    _is_on = False
+
+    @property
+    def is_on(self) -> bool:
+        return self._is_on
+
+    def _apply(self, props: dict) -> None:
+        if self._prop in props:
+            try:
+                self._is_on = bool(int(props[self._prop]))
+            except (TypeError, ValueError):
+                pass
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_write(1)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_write(0)
+
+
+class FountainPump(PetSwitch):
+    _prop = "Switch"
+    _attr_name = "Pump"
+    _attr_icon = "mdi:water-pump"
+    _default_name = "Aigo pet fountain"
+
+
+class FeederLight(PetSwitch):
+    _prop = "lampSwitch"
+    _attr_name = "Indicator light"
+    _attr_icon = "mdi:led-on"
+    _attr_entity_category = EntityCategory.CONFIG
+    _default_name = "Aigo pet feeder"
+
+
+class FeederSlowFeed(PetSwitch):
+    _prop = "slowFeed"
+    _attr_name = "Slow feed"
+    _attr_icon = "mdi:speedometer-slow"
+    _attr_entity_category = EntityCategory.CONFIG
+    _default_name = "Aigo pet feeder"
+
+
+# ------------------------------------------------------------------- selects --
+
+class PetSelect(PetEntity, SelectEntity):
+    _mapping: dict[int, str] = {}
+    _current: str | None = None
+
+    @property
+    def current_option(self) -> str | None:
+        return self._current
+
+    def _apply(self, props: dict) -> None:
+        if self._prop not in props:
+            return
+        try:
+            raw = int(props[self._prop])
+        except (TypeError, ValueError):
+            return
+        self._current = self._mapping.get(raw)
+        if self._current is None:
+            _LOGGER.debug("AigoSmart: unknown %s value %s for %s",
+                          self._prop, raw, self._iot_id)
+
+    async def async_select_option(self, option: str) -> None:
+        for value, label in self._mapping.items():
+            if label == option:
+                await self._async_write(value)
+                return
+
+
+class FountainMode(PetSelect):
+    _prop = "mode"
+    _attr_name = "Mode"
+    _attr_icon = "mdi:water-sync"
+    _mapping = FOUNTAIN_MODES
+    _attr_options = list(FOUNTAIN_MODES.values())
+    _default_name = "Aigo pet fountain"
+
+
+class FountainFlow(PetSelect):
+    _prop = "WaterGear"
+    _attr_name = "Flow"
+    _attr_icon = "mdi:waves"
+    _mapping = FOUNTAIN_FLOW
+    _attr_options = list(FOUNTAIN_FLOW.values())
+    _default_name = "Aigo pet fountain"
+
+
+# ------------------------------------------------------------------- sensors --
+
+class PetNumberSensor(PetEntity, SensorEntity):
+    """Plain numeric property."""
+
+    _value: float | int | None = None
+
+    @property
+    def native_value(self) -> float | int | None:
+        return self._value
+
+    def _apply(self, props: dict) -> None:
+        if self._prop in props:
+            raw = props[self._prop]
+            try:
+                self._value = int(raw) if float(raw).is_integer() else float(raw)
+            except (TypeError, ValueError):
+                self._value = None
+
+
+class _DaysSensor(PetNumberSensor):
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.DAYS
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _default_name = "Aigo pet fountain"
+
+
+class FountainFilterRemaining(_DaysSensor):
+    _prop = "FilterRemainderDay"
+    _attr_name = "Filter change in"
+    _attr_icon = "mdi:air-filter"
+
+
+class FountainCleaningRemaining(_DaysSensor):
+    _prop = "CleaningRemainderDay"
+    _attr_name = "Cleaning due in"
+    _attr_icon = "mdi:spray-bottle"
+
+
+class FountainFilterInterval(_DaysSensor):
+    _prop = "FilterReplaceTime"
+    _attr_name = "Filter change interval"
+    _attr_icon = "mdi:air-filter"
+
+
+class FountainCleaningInterval(_DaysSensor):
+    _prop = "DeviceCleaningTime"
+    _attr_name = "Cleaning interval"
+    _attr_icon = "mdi:spray-bottle"
+
+
+class FountainWaterLevel(PetNumberSensor):
+    _props = ("waterLevvel", "waterLevel", "WaterLevel")
+    _attr_name = "Water level"
+    _attr_icon = "mdi:water-percent"
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _default_name = "Aigo pet fountain"
+
+
+class _CodeSensor(PetNumberSensor):
+    """Raw status / error code whose meaning is not known yet."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:information-outline"
+
+
+class FountainWaterStatus(_CodeSensor):
+    _prop = "WaterStatus"
+    _attr_name = "Water status code"
+    _default_name = "Aigo pet fountain"
+
+
+class FountainError(_CodeSensor):
+    _prop = "errorCode"
+    _attr_name = "Error code"
+    _attr_icon = "mdi:alert-circle-outline"
+    _default_name = "Aigo pet fountain"
+
+
+class FeederError(_CodeSensor):
+    _prop = "errorCode"
+    _attr_name = "Error code"
+    _attr_icon = "mdi:alert-circle-outline"
+    _default_name = "Aigo pet feeder"
+
+
+class FeederFeedState(_CodeSensor):
+    _prop = "feedState"
+    _attr_name = "Feed state code"
+    _default_name = "Aigo pet feeder"
+
+
+class FeederBatteryState(_CodeSensor):
+    _prop = "batteryState"
+    _attr_name = "Battery state code"
+    _default_name = "Aigo pet feeder"
+
+
+class FeederBattery(PetNumberSensor):
+    _prop = "BatteryPercentage"
+    _attr_name = "Battery"
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _default_name = "Aigo pet feeder"
+
+
+class _FeedRecordSensor(PetEntity, SensorEntity):
+    _prop = "feedRecord"
+    _default_name = "Aigo pet feeder"
+    _records: list[tuple[datetime, int]] = []
+
+    def _apply(self, props: dict) -> None:
+        if self._prop in props:
+            self._records = parse_feed_record(props[self._prop])
+
+
+class FeederLastFeed(_FeedRecordSensor):
+    _attr_name = "Last feeding"
+    _attr_icon = "mdi:food-drumstick"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    @classmethod
+    def key(cls) -> str:
+        return "feedRecord_last"
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self._records[0][0] if self._records else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"portions": self._records[0][1]} if self._records else {}
+
+
+class FeederPortionsToday(_FeedRecordSensor):
+    _attr_name = "Portions today"
+    _attr_icon = "mdi:bowl-mix"
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+    @classmethod
+    def key(cls) -> str:
+        return "feedRecord_today"
+
+    @property
+    def native_value(self) -> int:
+        return portions_since(self._records, dt_util.start_of_local_day())
+
+
+class FeederPlan(PetEntity, SensorEntity):
+    """Read-only view of the schedule; the plan is never written."""
+
+    _prop = "feedingPlan"
+    _attr_name = "Feeding plan"
+    _attr_icon = "mdi:calendar-clock"
+    _default_name = "Aigo pet feeder"
+    _slots: list[dict[str, Any]] = []
+
+    def _apply(self, props: dict) -> None:
+        if self._prop in props:
+            self._slots = parse_feeding_plan(props[self._prop])
+
+    @property
+    def native_value(self) -> int:
+        """Number of enabled schedule slots."""
+        return sum(1 for slot in self._slots if slot["enabled"])
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"slots": self._slots}
+
+
+# ------------------------------------------------------------------- factory --
+
+FOUNTAIN_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
+    "switch": (FountainPump,),
+    "select": (FountainMode, FountainFlow),
+    "sensor": (FountainWaterLevel, FountainFilterRemaining,
+               FountainCleaningRemaining, FountainFilterInterval,
+               FountainCleaningInterval, FountainWaterStatus, FountainError),
+}
+
+FEEDER_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
+    "switch": (FeederLight, FeederSlowFeed),
+    "sensor": (FeederLastFeed, FeederPortionsToday, FeederPlan, FeederBattery,
+               FeederBatteryState, FeederFeedState, FeederError),
+}
+
+
+def make_pet_entities(platform: str, coordinator: AigoDataUpdateCoordinator,
+                      state: dict | None, pk_catalog: dict, known: set) -> list:
+    """Build not-yet-created pet fountain / feeder entities for one platform.
+
+    Each entity is only created once its property has been seen, so a model
+    with a different TSL gets fewer entities instead of wrong ones.
+    """
+    out: list = []
+    for dev in coordinator.devices:
+        iot_id = dev.get("iotId", "")
+        if not iot_id:
+            continue
+        if is_pet_fountain_device(dev, pk_catalog):
+            classes = FOUNTAIN_ENTITIES.get(platform, ())
+        elif is_pet_feeder_device(dev, pk_catalog):
+            classes = FEEDER_ENTITIES.get(platform, ())
+        else:
+            continue
+        props = coordinator.props.get(iot_id, {})
+        for cls in classes:
+            key = f"{iot_id}_pet_{cls.key()}_{platform}"
+            if key in known or not any(p in props for p in cls.identifiers()):
+                continue
+            known.add(key)
+            out.append(cls(coordinator, dev, state))
+    return out
+
+
+def setup_pet_platform(hass, entry, state: dict, platform: str,
+                       async_add_entities) -> None:
+    """Add pet entities now and whenever new devices / properties appear."""
+    coordinator: AigoDataUpdateCoordinator = state["coordinator"]
+    registry = state["registry"]
+    pk_catalog: dict = state.get("pk_catalog", {})
+    registry.register(platform)
+
+    @callback
+    def _async_add(*_args) -> None:
+        new = make_pet_entities(platform, coordinator, state, pk_catalog,
+                                registry._known[platform])
+        if new:
+            async_add_entities(new)
+
+    _async_add()
+    entry.async_on_unload(hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_add))
+    entry.async_on_unload(coordinator.async_add_listener(_async_add))
