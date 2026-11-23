@@ -68,11 +68,14 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
   exactly like the app does — only automate it with the basket in place.
 - **Pet water fountains** (`petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza
   S40101N34) — pump on/off, mode (continuous / intermittent), flow
-  (low / medium / high), water level, days until filter change and cleaning
-- **Pet feeders** (`petFeeder`, e.g. `a1xEttfYqF2`) — last feeding, portions
-  fed today, feeding schedule (read-only), indicator light and slow-feed
-  switches, battery. Manual feeding is not available yet.
+  (low / medium / high), water level, days until filter change and cleaning,
+  reset buttons for both
+- **Pet feeders** (`petFeeder`, e.g. `a1xEttfYqF2`) — **Feed** button with a
+  portions setting, last feeding, portions fed today, feeding schedule
+  (read-only), indicator light, slow-feed and voice switches, battery
 - **Smart Aquariums** — full controls (power, RGB lighting color wheel & 12 scenes, 3-speed water pump selector, buzzer, child lock, feeding protection/reminder) and sensors (temperature, feeding state, error telemetry)
+- **Repairs** — devices that aren't supported yet show up under
+  Settings → System → Repairs with a link to request support
 - **Diagnostics** — native Download-diagnostics button on the integration
   and every device page, with cloud metadata, live properties, full TSL model,
   ALCS local keys and connection info
@@ -103,6 +106,9 @@ platforms, the 498-product PK catalog, and the full
 - [@bduartept1](https://github.com/bduartept1) — for reporting issue [#1](https://github.com/JuanmanDev/aigo-smart/issues/1), testing multiple releases, providing device diagnostics, TSL models, and screenshots to make the **AigoSmart Aquarium** fully supported in Home Assistant!
 
 ## Installation
+
+**Requirements:** Home Assistant **2024.11 or newer** and an AigoSmart (Aigostar)
+app account.
 
 ### HACS (recommended)
 
