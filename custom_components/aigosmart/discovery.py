@@ -45,6 +45,8 @@ CATEGORY_PLATFORM = {
     # fan-lights (composite device - fan + light + timer + key beep).
     # The catalog says "FanLighting", the cloud returns "fanLight".
     "fanlighting": "fanlight", "fanlight": "fanlight",
+    # air fryers (composite device - handled by multiple platforms)
+    "airfryer": "airfryer",
 }
 
 # Heater-family also climate

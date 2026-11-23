@@ -11,9 +11,11 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .airfryer import make_airfryer_entities
 from .commander import get_commander
 from .const import DOMAIN, FANLIGHT_TIMER_MAX_MIN, PROP_FAN_TIMER, STATUS_ONLINE
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
+from .discovery import DeviceRegistry
 from .helpers import is_fan_device, is_fan_light_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,11 +29,32 @@ async def async_setup_entry(
     state = hass.data[DOMAIN][entry.entry_id]
     coordinator: AigoDataUpdateCoordinator = state["coordinator"]
 
+    registry: DeviceRegistry = state["registry"]
+    pk_catalog: dict = state.get("pk_catalog", {})
+    registry.register("number")
+
     entities = []
     for dev in coordinator.devices:
         if is_fan_device(dev):
             entities.append(AigoSmartFanTimer(coordinator, dev, state))
     async_add_entities(entities)
+
+    # Air fryer entities (dynamic: re-checked on every coordinator update)
+    def _make_airfryer() -> list:
+        return make_airfryer_entities(
+            "number", coordinator, state, pk_catalog,
+            registry._known["number"])
+
+    @callback
+    def _async_handle_airfryer(*_args) -> None:
+        new = _make_airfryer()
+        if new:
+            async_add_entities(new)
+
+    _async_handle_airfryer()
+    entry.async_on_unload(
+        hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
+    entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
 
 
 class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):

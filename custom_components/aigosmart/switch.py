@@ -11,6 +11,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .airfryer import make_airfryer_entities
 from .commander import get_commander
 from .const import (
     DOMAIN,
@@ -108,6 +109,23 @@ async def async_setup_entry(
     _async_handle_new()
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_new))
+
+    # Air fryer entities (dynamic: re-checked on every coordinator update)
+    def _make_airfryer() -> list:
+        return make_airfryer_entities(
+            "switch", coordinator, state, pk_catalog,
+            registry._known["switch"])
+
+    @callback
+    def _async_handle_airfryer(*_args) -> None:
+        new = _make_airfryer()
+        if new:
+            async_add_entities(new)
+
+    _async_handle_airfryer()
+    entry.async_on_unload(
+        hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
+    entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
 
 
 class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):

@@ -5,6 +5,7 @@
 ### Added
 
 - Support for Aigostar fan-lights (cloud category `fanLight`, e.g. `a180PpkuyP6` / `a1aeYLqeLsb`) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)): a **Fan** entity (on/off, 6 speeds, Normal/Natural/Sleep/Fresh presets, forward/reverse direction) and a separate **Light** entity (on/off, brightness, colour temperature, colour on RGBCCT models). The auto-off timer uses minutes (0-1440) on these models.
+- Support for the Aigostar air fryer `a1MqVKrp9JA` (category `Airfryer`): Cooking switch, Program select, Temperature / Cook time / Flip reminder / Delay start numbers, and Status / Error / Flip food / Lid sensors. Contributed by [@jazzvivi2](https://github.com/jazzvivi2) ([#5](https://github.com/JuanmanDev/aigo-smart/issues/5)).
 
 ### Fixed
 
