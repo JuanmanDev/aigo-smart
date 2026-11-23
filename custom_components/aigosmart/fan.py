@@ -240,6 +240,29 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
         return max(low, min(high, round(
             percentage_to_ranged_value(self._speed_range, percentage))))
 
+    def _power_on_items(self) -> dict[str, Any]:
+        """Power-on part of a write; omitted for a fan-light that is already on.
+
+        BLE Mesh fan-lights ignore a windspeed / mode change bundled with a
+        redundant powerstate_2 = 1 (diagnosed by @davidpla7 in #2). Classic
+        fans keep the bundled write, which is verified on the tower fan.
+        """
+        if self._fan_light and self._on:
+            return {}
+        return {self._prop_power: 1}
+
+    def _manual_speed_items(self, speed: int) -> dict[str, Any]:
+        """Speed write; fan-lights also leave a breeze preset for Normal.
+
+        With mode_2 != 0 (Natural / Sleep / Fresh) the fan-light follows its
+        own speed curve and ignores manual windspeed writes.
+        """
+        items: dict[str, Any] = {PROP_FAN_SPEED: speed}
+        if self._fan_light and self._mode != 0:
+            items[self._prop_mode] = 0
+            self._mode = 0
+        return items
+
     async def _send(self, items: dict) -> None:
         self.async_write_ha_state()
         if self._commander is not None:
@@ -261,13 +284,21 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
         if percentage == 0:
             await self.async_turn_off()
             return
-        items: dict[str, Any] = {self._prop_power: 1}
+        items = self._power_on_items()
+        preset = self._preset_to_value.get(preset_mode) if preset_mode else None
         if percentage is not None:
             self._speed = self._speed_for(percentage)
-            items[PROP_FAN_SPEED] = self._speed
-        if preset_mode in self._preset_to_value:
-            self._mode = self._preset_to_value[preset_mode]
-            items[self._prop_mode] = self._mode
+            if preset is None:
+                items.update(self._manual_speed_items(self._speed))
+            else:
+                items[PROP_FAN_SPEED] = self._speed
+        if preset is not None:
+            self._mode = preset
+            items[self._prop_mode] = preset
+        if not items:
+            # already running and nothing to change: a bare power-on is a
+            # harmless no-op that resyncs a device switched off elsewhere
+            items = {self._prop_power: 1}
         self._on = True
         await self._send(items)
 
@@ -282,14 +313,18 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
             await self.async_turn_off()
             return
         self._speed = self._speed_for(percentage)
+        items = self._power_on_items()
+        items.update(self._manual_speed_items(self._speed))
         self._on = True
-        await self._send({self._prop_power: 1, PROP_FAN_SPEED: self._speed})
+        await self._send(items)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         if preset_mode in self._preset_to_value:
             self._mode = self._preset_to_value[preset_mode]
+            items = self._power_on_items()
+            items[self._prop_mode] = self._mode
             self._on = True
-            await self._send({self._prop_power: 1, self._prop_mode: self._mode})
+            await self._send(items)
 
     async def async_oscillate(self, oscillating: bool) -> None:
         self._oscillating = oscillating

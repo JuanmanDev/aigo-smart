@@ -168,12 +168,95 @@ class TestFanLightFan(_FanTestBase):
         self.assertEqual(self.sent(), {"powerstate_2": 0})
 
     async def test_low_percentage_clamped_to_speed_1(self):
+        # fixture is off and in Sleep (mode_2 = 2): power + speed + Normal
         await self.fan.async_set_percentage(1)
-        self.assertEqual(self.sent(), {"powerstate_2": 1, "windspeed": 1})
+        self.assertEqual(self.sent(), {"powerstate_2": 1, "windspeed": 1, "mode_2": 0})
 
     async def test_direction(self):
         await self.fan.async_set_direction("forward")
         self.assertEqual(self.sent(), {"direction": 0})
+
+
+# Speed writes on BLE Mesh fan-lights (#2, diagnosed by the reporter on
+# a180PpkuyP6 / a1aeYLqeLsb): a windspeed bundled with a redundant
+# powerstate_2 = 1 is ignored, and so is any manual speed while mode_2 != 0.
+RUNNING_NORMAL = dict(FAN_LIGHT_PROPS, powerstate_2=1, windspeed=2, mode_2=0)
+RUNNING_SLEEP = dict(FAN_LIGHT_PROPS, powerstate_2=1, windspeed=2, mode_2=2)
+OFF_NORMAL = dict(FAN_LIGHT_PROPS, powerstate_2=0, windspeed=2, mode_2=0)
+
+
+class TestFanLightSpeedFromOff(_FanTestBase):
+    dev = FAN_LIGHT_RGBCCT
+    props = OFF_NORMAL
+
+    async def test_set_percentage_sends_power_and_speed(self):
+        await self.fan.async_set_percentage(50)
+        self.assertEqual(self.sent(), {"powerstate_2": 1, "windspeed": 3})
+        self.assertTrue(self.fan.is_on)
+
+    async def test_turn_on_with_percentage_is_one_write(self):
+        await self.fan.async_turn_on(100, None)
+        self.fan._commander.async_send.assert_awaited_once_with(
+            {"powerstate_2": 1, "windspeed": 6})
+
+    async def test_preset_from_off_powers_on(self):
+        await self.fan.async_set_preset_mode("Natural")
+        self.assertEqual(self.sent(), {"powerstate_2": 1, "mode_2": 1})
+
+    async def test_all_six_speeds(self):
+        for pct, speed in ((17, 1), (33, 2), (50, 3), (67, 4), (83, 5), (100, 6)):
+            self.fan._on = False
+            await self.fan.async_set_percentage(pct)
+            self.assertEqual(self.sent(), {"powerstate_2": 1, "windspeed": speed})
+
+
+class TestFanLightSpeedWhileRunning(_FanTestBase):
+    dev = FAN_LIGHT_RGBCCT
+    props = RUNNING_NORMAL
+
+    async def test_set_percentage_sends_speed_only(self):
+        await self.fan.async_set_percentage(100)
+        self.assertEqual(self.sent(), {"windspeed": 6})
+
+    async def test_turn_on_with_percentage_sends_speed_only(self):
+        await self.fan.async_turn_on(17, None)
+        self.assertEqual(self.sent(), {"windspeed": 1})
+
+    async def test_preset_sends_mode_only(self):
+        await self.fan.async_set_preset_mode("Fresh")
+        self.assertEqual(self.sent(), {"mode_2": 3})
+
+    async def test_plain_turn_on_still_writes_power(self):
+        await self.fan.async_turn_on(None, None)
+        self.assertEqual(self.sent(), {"powerstate_2": 1})
+
+    async def test_turn_off_unchanged(self):
+        await self.fan.async_turn_off()
+        self.assertEqual(self.sent(), {"powerstate_2": 0})
+
+    def test_transitional_255_keeps_last_speed(self):
+        self.fan._apply({"windspeed": 255})
+        self.assertEqual(self.fan._speed, 2)
+        self.fan._apply({"windspeed": 4})
+        self.assertEqual(self.fan._speed, 4)
+
+
+class TestFanLightSpeedInPreset(_FanTestBase):
+    dev = FAN_LIGHT_RGBCCT
+    props = RUNNING_SLEEP
+
+    async def test_manual_speed_returns_to_normal(self):
+        await self.fan.async_set_percentage(50)
+        self.assertEqual(self.sent(), {"windspeed": 3, "mode_2": 0})
+        self.assertEqual(self.fan.preset_mode, "Normal")
+
+    async def test_preset_selection_not_forced_to_normal(self):
+        await self.fan.async_set_preset_mode("Natural")
+        self.assertEqual(self.sent(), {"mode_2": 1})
+
+    async def test_turn_on_with_speed_and_preset_keeps_preset(self):
+        await self.fan.async_turn_on(50, "Sleep")
+        self.assertEqual(self.sent(), {"windspeed": 3, "mode_2": 2})
 
 
 class TestTowerFanUnchanged(_FanTestBase):
@@ -188,8 +271,18 @@ class TestTowerFanUnchanged(_FanTestBase):
         self.assertIsNone(self.fan._attr_name)
 
     async def test_set_percentage(self):
+        # classic fans keep the bundled power + speed write and their mode
         await self.fan.async_set_percentage(100)
         self.assertEqual(self.sent(), {"powerstate": 1, "windspeed": 3})
+        self.assertEqual(self.fan._mode, 1)
+
+    async def test_set_preset(self):
+        await self.fan.async_set_preset_mode("Sleep")
+        self.assertEqual(self.sent(), {"powerstate": 1, "mode": 2})
+
+    async def test_turn_on_with_percentage(self):
+        await self.fan.async_turn_on(33, None)
+        self.assertEqual(self.sent(), {"powerstate": 1, "windspeed": 1})
 
 
 if __name__ == "__main__":
