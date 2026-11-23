@@ -85,6 +85,10 @@ async def async_setup_entry(
     _async_handle_new()
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_new))
+    # Also re-check on every poll: these entities are gated on properties,
+    # which can arrive after startup (device offline at boot, slow first
+    # poll). registry._known prevents duplicates.
+    entry.async_on_unload(coordinator.async_add_listener(_async_handle_new))
 
     # Air fryer entities (dynamic: re-checked on every coordinator update)
     def _make_airfryer() -> list:

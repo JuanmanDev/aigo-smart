@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Entities that depend on a device property (aquarium switches, pump speed and scenes, fan key-beep, temperature/humidity sensors) were only created if that property was already known at startup, e.g. not when the device was offline during the first poll. They are now created as soon as the property shows up. Fan timers and kettles, which were only created at startup, now also appear for devices added later. Nothing is duplicated, and unique IDs are unchanged.
+- The fan timer showed 0 until the next poll after a restart; it now shows the device value straight away.
+
 ### Removed
 
 - The unused `DeviceRegistry.sync()` (internal; entity creation never called it).
