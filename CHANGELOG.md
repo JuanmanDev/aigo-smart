@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Diagnostics downloads no longer expose the account (`identityAlias`, `identityId`), device identifiers (`iotId`, `deviceName`, TSL `link`) or ALCS local-control keys. They are redacted, and properties are keyed by a `device_N` alias instead of the iotId.
+
 ## [0.7.0] - 2026-10-24
 
 ### Added

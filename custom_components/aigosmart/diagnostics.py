@@ -13,6 +13,7 @@ from __future__ import annotations
 import socket
 from typing import Any
 
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntry
@@ -24,6 +25,14 @@ from .const import (
     STATUS_OFFLINE,
     STATUS_ONLINE,
 )
+
+# Diagnostics files get pasted into public GitHub issues. identityAlias /
+# identityId identify the AigoSmart account, iotId / deviceName the hardware,
+# and the ALCS keys grant local control of the device.
+TO_REDACT = {
+    "iotId", "deviceName", "identityAlias", "identityId", "identifiers",
+    "accessKey", "accessToken", "link", "mac", "entry_title",
+}
 
 _STATUS_LABELS = {
     STATUS_NOT_ACTIVATED: "NOT_ACTIVATED",
@@ -65,10 +74,16 @@ async def async_get_config_entry_diagnostics(
     client = state.get("client")
 
     devices_out = []
+    props_out: dict[str, Any] = {}
     if coordinator:
-        for dev in coordinator.devices:
+        for index, dev in enumerate(coordinator.devices):
             iot_id = dev.get("iotId", "")
+            # properties are keyed by iotId; re-key by a stable alias so the
+            # mapping survives redaction
+            alias = f"device_{index}"
+            props_out[alias] = coordinator.props.get(iot_id, {})
             devices_out.append({
+                "alias": alias,
                 "iotId": iot_id,
                 "nickName": dev.get("nickName"),
                 "deviceName": dev.get("deviceName"),
@@ -85,7 +100,7 @@ async def async_get_config_entry_diagnostics(
                 "identityAlias": dev.get("identityAlias"),
             })
 
-    return {
+    return async_redact_data({
         "integration": {
             "domain": DOMAIN,
             "entry_title": entry.title,
@@ -108,8 +123,8 @@ async def async_get_config_entry_diagnostics(
             if coordinator else [],
         },
         "devices": devices_out,
-        "properties": coordinator.props if coordinator else {},
-    }
+        "properties": props_out,
+    }, TO_REDACT)
 
 
 async def async_get_device_diagnostics(
@@ -167,14 +182,11 @@ async def async_get_device_diagnostics(
         "properties": props,
         "tsl_model": tsl,
         "local_control": {
-            "alcs_access_info": [
-                {k: _redact(v) if "token" in k.lower() else v for k, v in item.items()}
-                for item in alcs_keys
-            ] if alcs_keys else "not_available",
+            "alcs_access_info": alcs_keys or "not_available",
             "how_to_probe_lan": (
                 "Run: python aigo_cli.py discover  (multicast 224.0.1.187:5683) "
                 "then python aigo_cli.py localkeys <IOT_ID>"
             ),
         },
     }
-    return diagnostics
+    return async_redact_data(diagnostics, TO_REDACT)
