@@ -59,6 +59,10 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
 - **Fans done right** — speed 1-3, preset modes (Normal/Natural/Sleep),
   oscillation, auto-off timer (number), key-beep switch
 - **Kettles** — exposed as water_heater (target temperature, on/off)
+- **Air fryers** (`a1MqVKrp9JA`) — start/stop, program, temperature, cook
+  time, flip reminder and delay start, plus status / error / flip / lid
+  sensors. ⚠️ Turning **Cooking** on starts the heating element remotely,
+  exactly like the app does — only automate it with the basket in place.
 - **Smart Aquariums** — full controls (power, RGB lighting color wheel & 12 scenes, 3-speed water pump selector, buzzer, child lock, feeding protection/reminder) and sensors (temperature, feeding state, error telemetry)
 - **Diagnostics** — native Download-diagnostics button on the integration
   and every device page, with cloud metadata, live properties, full TSL model,
@@ -84,6 +88,7 @@ platforms, the 498-product PK catalog, and the full
 
 ### Community Contributors & Helpers
 
+- [@jazzvivi2](https://github.com/jazzvivi2) — for issue [#5](https://github.com/JuanmanDev/aigo-smart/issues/5): the **Aigostar Air Fryer** support, written and tested on a real device.
 - [@bduartept1](https://github.com/bduartept1) — for reporting issue [#1](https://github.com/JuanmanDev/aigo-smart/issues/1), testing multiple releases, providing device diagnostics, TSL models, and screenshots to make the **AigoSmart Aquarium** fully supported in Home Assistant!
 
 ## Installation

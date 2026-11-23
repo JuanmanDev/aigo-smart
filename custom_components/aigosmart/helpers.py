@@ -7,11 +7,35 @@ from __future__ import annotations
 
 from .const import DOMAIN
 
+FAN_LIGHT_CATEGORIES = ("fanlight", "fanlighting")
+
+
+def is_fan_light_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> bool:
+    """Ceiling fan with an integrated lamp (cloud categoryKey "fanLight").
+
+    The bundled catalog spells the category "FanLighting"; the cloud returns
+    "fanLight". Both are accepted, plus the Chinese product names.
+    """
+    category = (dev.get("categoryKey") or "").strip().lower()
+    if not category and pk_catalog:
+        category = pk_catalog.get(dev.get("productKey", ""), "").lower()
+    product = (dev.get("productName") or "").strip().lower()
+    return (
+        category in FAN_LIGHT_CATEGORIES
+        or product.replace(" ", "").startswith("fanlight")
+        or "风扇灯" in product or "吊扇灯" in product
+    )
+
 
 def is_fan_device(dev: dict) -> bool:
     category = (dev.get("categoryKey") or "").strip().lower()
     product = (dev.get("productName") or "").strip().lower()
-    return category == "fan" or "fan" in product.split() or product.startswith("fan")
+    return (
+        category == "fan"
+        or "fan" in product.split()
+        or product.startswith("fan")
+        or is_fan_light_device(dev)
+    )
 
 
 def is_kettle_device(dev: dict) -> bool:
@@ -45,4 +69,17 @@ def is_aquarium_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> b
         or "aquarium" in product or "水族" in product
         or "aquarium" in name or "水族" in name
         or "aquarium" in nick or "水族" in nick
+    )
+
+
+def is_airfryer_device(dev: dict, pk_catalog: dict[str, str] | None = None) -> bool:
+    """Check if a device is an air fryer."""
+    category = (dev.get("categoryKey") or "").strip().lower()
+    if not category and pk_catalog:
+        category = pk_catalog.get(dev.get("productKey", ""), "").lower()
+    product = (dev.get("productName") or "").strip().lower()
+    return (
+        category == "airfryer"
+        or "空气炸锅" in product
+        or "airfryer" in product.replace(" ", "")
     )

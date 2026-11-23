@@ -14,6 +14,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .airfryer import make_airfryer_entities
 from .const import AQUARIUM_ERROR_CODES, AQUARIUM_FEED_STATE, AQUARIUM_WATER_PUMP_STATUS, DOMAIN
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry
@@ -83,6 +84,23 @@ async def async_setup_entry(
     _async_handle_new()
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_new))
+
+    # Air fryer entities (dynamic: re-checked on every coordinator update)
+    def _make_airfryer() -> list:
+        return make_airfryer_entities(
+            "sensor", coordinator, state, pk_catalog,
+            registry._known["sensor"])
+
+    @callback
+    def _async_handle_airfryer(*_args) -> None:
+        new = _make_airfryer()
+        if new:
+            async_add_entities(new)
+
+    _async_handle_airfryer()
+    entry.async_on_unload(
+        hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
+    entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
 
 
 class AigoSmartSensor(CoordinatorEntity, SensorEntity):

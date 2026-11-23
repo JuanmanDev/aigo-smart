@@ -230,8 +230,10 @@ class ProductProfile:
 # the product keeps working even when /thing/tsl/get is unavailable or the
 # account's token has expired at setup time.
 #
-# To add a product: call the `aigosmart.dump_tsl` service and copy the snippet
-# from the "resolved colour profile" line in home-assistant.log.
+# To add a product: enable debug logging for custom_components.aigosmart,
+# reload the integration and copy the snippet from the "resolved colour
+# profile" line in home-assistant.log (the full TSL is also in the device's
+# "Download diagnostics" file, under tsl_model).
 KNOWN_PRODUCT_PROFILES: dict[str, ProductProfile] = {
     # Aigostar "Downlight RGB CCT" (Bluetooth Mesh, behind the Smart Mesh Gw).
     # Confirmed against /thing/tsl/get on real hardware.
@@ -240,7 +242,8 @@ KNOWN_PRODUCT_PROFILES: dict[str, ProductProfile] = {
     # the mesh identifiers (powerstate / brightness / colorTemperature), but
     # colour and the white/colour switch use the Wi-Fi ones (HSVColor /
     # LightMode). The lower-case "mode" property on this product is a scene
-    # selector, not the white/colour switch — see PROP_MESH_SCENE in const.py.
+    # selector, not the white/colour switch (mode_spec_from_tsl skips enums
+    # larger than _MAX_LIGHT_MODE_ENUM_SIZE for that reason).
     "a1uh0UxUu3Z": ProductProfile(
         color=ColorSpec(
             identifier="HSVColor",

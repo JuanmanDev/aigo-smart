@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Support for Aigostar fan-lights (cloud category `fanLight`, e.g. `a180PpkuyP6` / `a1aeYLqeLsb`) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)): a **Fan** entity (on/off, 6 speeds, Normal/Natural/Sleep/Fresh presets, forward/reverse direction) and a separate **Light** entity (on/off, brightness, colour temperature, colour on RGBCCT models). The auto-off timer uses minutes (0-1440) on these models.
+- Support for the Aigostar air fryer `a1MqVKrp9JA` (category `Airfryer`): Cooking switch, Program select, Temperature / Cook time / Flip reminder / Delay start numbers, and Status / Error / Flip food / Lid sensors. Contributed by [@jazzvivi2](https://github.com/jazzvivi2) ([#5](https://github.com/JuanmanDev/aigo-smart/issues/5)).
+
+### Fixed
+
+- Diagnostics downloads no longer expose the account (`identityAlias`, `identityId`), device identifiers (`iotId`, `deviceName`, TSL `link`) or ALCS local-control keys. They are redacted, and properties are keyed by a `device_N` alias instead of the iotId.
+- `fan.turn_on` / `fan.turn_off` were rejected by Home Assistant for every AigoSmart fan: the entity did not declare `TURN_ON` / `TURN_OFF` support, which HA requires since 2025.2. `async_turn_on` now also accepts HA's positional arguments.
+- Setting a fan to 0 % sent the invalid `windspeed: 0` (cloud error 6309). It now turns the fan off.
+- Colour support for lights without a pinned profile was guessed once at startup from a property snapshot, and the device TSL was never downloaded outside diagnostics. Lights restarted with an empty snapshot stayed colour-temperature-only until a reload. The TSL is now fetched when each light is added, colour support is re-evaluated when properties arrive, and failed TSL fetches are retried ([#3](https://github.com/JuanmanDev/aigo-smart/issues/3)).
+- Writes are now logged at debug level, together with a debug line when the device does not report back what was sent, so writes the firmware ignores leave a trace.
+- Devices that no platform supports are now reported once at INFO level (name, category, productKey) instead of being skipped silently. A device set up as a plain switch that has no known on/off property logs a warning listing its real properties ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)).
+
 ## [0.7.0] - 2026-10-24
 
 ### Added

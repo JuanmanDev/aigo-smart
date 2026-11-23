@@ -27,12 +27,13 @@ jobs:
       - name: Run unit tests
         run: |
           python -m unittest python_client.tests.test_unit \
+                 python_client.tests.test_airfryer \
                  python_client.tests.test_discovery \
                  python_client.tests.test_ble \
                  python_client.tests.test_breeze \
                  python_client.tests.test_color \
                  python_client.tests.test_commander \
                  python_client.tests.test_coordinator_cache \
-                 python_client.tests.test_light_state \
+                 python_client.tests.test_light_state                  python_client.tests.test_fan_light \
                  python_client.tests.test_status \
                  python_client.tests.test_session -v

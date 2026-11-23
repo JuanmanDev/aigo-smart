@@ -71,6 +71,20 @@ PROP_FAN_TIMER = "appointmentClosingTime"  # int 0-24 h auto-off
 PROP_FAN_BUZZER = "buzzerSwitch"           # bool key beep
 FAN_PRESET_MODES = {0: "Normal", 1: "Natural", 2: "Sleep"}
 
+# --- Fan-light (ceiling fan + lamp, categoryKey "fanLight") -------------------
+# BLE Mesh products a180PpkuyP6 (_RGBCCT) / a1aeYLqeLsb (_CCT). The TSL has two
+# channels: *_1 is the lamp (mode_1 = light effects), *_2 is the fan
+# (mode_2 = normal/natural/sleep/fresh). The lamp side reuses the mesh light
+# identifiers (brightness, colorTemperature, HSVColor, LightMode).
+PROP_FANLIGHT_LIGHT_SWITCH = "powerstate_1"
+PROP_FANLIGHT_FAN_SWITCH = "powerstate_2"
+PROP_FANLIGHT_FAN_MODE = "mode_2"
+PROP_FAN_DIRECTION = "direction"           # bool 0=forward 1=reverse
+FANLIGHT_SPEED_RANGE = (1, 6)              # windspeed enum 1-6
+FAN_SPEED_TRANSITION = 255                 # windspeed "gear changing", not a speed
+FANLIGHT_PRESET_MODES = {0: "Normal", 1: "Natural", 2: "Sleep", 3: "Fresh"}
+FANLIGHT_TIMER_MAX_MIN = 1440              # appointmentClosingTime 0-1440 min
+
 # --- Kettle / water heater TSL -----------------------------------------------
 PROP_KETTLE_SWITCH = "HeatingSwitch"
 PROP_KETTLE_TARGET = "Target_temperature"

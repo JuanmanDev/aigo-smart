@@ -11,6 +11,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .airfryer import make_airfryer_entities
 from .commander import get_commander
 from .const import (
     DOMAIN,
@@ -109,6 +110,23 @@ async def async_setup_entry(
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_new))
 
+    # Air fryer entities (dynamic: re-checked on every coordinator update)
+    def _make_airfryer() -> list:
+        return make_airfryer_entities(
+            "switch", coordinator, state, pk_catalog,
+            registry._known["switch"])
+
+    @callback
+    def _async_handle_airfryer(*_args) -> None:
+        new = _make_airfryer()
+        if new:
+            async_add_entities(new)
+
+    _async_handle_airfryer()
+    entry.async_on_unload(
+        hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
+    entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
+
 
 class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
     _attr_has_entity_name = True
@@ -132,6 +150,7 @@ class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
         # unreliable — verified via /thing/status/get when ambiguous)
         self._available = coordinator.is_device_online(self._iot_id)
         self._prop = PROP_SWITCH
+        self._warned_no_prop = False
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
 
@@ -167,6 +186,20 @@ class AigoSmartSwitch(CoordinatorEntity, SwitchEntity):
         elif PROP_LIGHT_SWITCH in props:
             self._prop = PROP_LIGHT_SWITCH
             self._is_on = bool(props[PROP_LIGHT_SWITCH])
+        elif props and not self._warned_no_prop:
+            # Mapped to "switch" by category, but the device has no on/off
+            # property this entity knows: every command would fail with
+            # 5092 "property not found". Say so instead of failing silently.
+            self._warned_no_prop = True
+            _LOGGER.warning(
+                "AigoSmart: '%s' (category=%s, productKey=%s) was set up as a plain "
+                "switch but has none of %s, so it cannot be controlled yet. Its "
+                "properties are: %s. Please open an issue with the device's "
+                "'Download diagnostics' file",
+                self._dev.get("nickName") or self._dev.get("deviceName"),
+                self._dev.get("categoryKey"), self._dev.get("productKey"),
+                ", ".join((PROP_SWITCH, PROP_SWITCH_ALT, PROP_LIGHT_SWITCH)),
+                ", ".join(sorted(props)))
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         prev = self._is_on

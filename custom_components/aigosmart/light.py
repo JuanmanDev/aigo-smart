@@ -33,6 +33,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .color_model import (
     ColorSpec,
     ModeSpec,
+    as_source_snippet,
     as_struct,
     color_spec_from_props,
     color_spec_from_tsl,
@@ -50,6 +51,7 @@ from .const import (
     PROP_AQUARIUM_LIGHT_SWITCH,
     PROP_BRIGHTNESS_CANDIDATES,
     PROP_COLOR_TEMP_CANDIDATES,
+    PROP_FANLIGHT_LIGHT_SWITCH,
     PROP_HSV_CANDIDATES,
     PROP_LIGHT_BRIGHTNESS,
     PROP_LIGHT_COLOR_TEMP,
@@ -66,6 +68,7 @@ from .helpers import (
     is_aquarium_device,
     is_bt_device,
     is_fan_device,
+    is_fan_light_device,
     is_gateway_device,
     is_kettle_device,
 )
@@ -116,6 +119,10 @@ async def async_setup_entry(
             if _is_aquarium_light(dev):
                 registry._known["light"].add(iot_id)
                 out.append(AigoSmartAquariumLight(coordinator, dev, state))
+            elif is_fan_light_device(dev, pk_catalog):
+                # the fan half is created by fan.py on the same device
+                registry._known["light"].add(iot_id)
+                out.append(AigoSmartFanLightLight(coordinator, dev, state))
             elif _is_light(dev):
                 registry._known["light"].add(iot_id)
                 out.append(AigoSmartLight(coordinator, dev, state))
@@ -164,22 +171,12 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         self._prop_brightness = PROP_MESH_BRIGHTNESS if self._is_bt else PROP_LIGHT_BRIGHTNESS
         self._prop_color_temp = PROP_MESH_COLOR_TEMP if self._is_bt else PROP_LIGHT_COLOR_TEMP
 
-        # Colour capability: pinned profile for this product, or resolved from TSL
-        product_key = dev.get("productKey", "")
-        profile = known_profile(product_key)
-        if profile is not None:
-            self._color_spec: ColorSpec | None = profile.color
-            self._mode_spec: ModeSpec = profile.mode
-        else:
-            tsl = coordinator.tsl_models.get(product_key) or {}
-            if tsl:
-                self._color_spec = color_spec_from_tsl(tsl)
-                self._mode_spec = mode_spec_from_tsl(tsl, PROP_LIGHT_MODE)
-            else:
-                # last resort: infer from a live property snapshot
-                props = coordinator.props.get(self._iot_id, {})
-                self._color_spec = color_spec_from_props(props)
-                self._mode_spec = ModeSpec(identifier=PROP_LIGHT_MODE)
+        # Colour capability: pinned profile > device TSL > live props snapshot.
+        # The TSL is fetched in async_added_to_hass; a snapshot-based guess is
+        # refined there, and again once properties arrive.
+        self._color_spec: ColorSpec | None = None
+        self._mode_spec: ModeSpec = ModeSpec(identifier=PROP_LIGHT_MODE)
+        self._spec_source = self._resolve_color_specs()
 
         self._is_on = False
         self._brightness = 255
@@ -188,6 +185,52 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(self._coordinator.props.get(self._iot_id, {}))
+
+    # -- colour capability ---------------------------------------------------
+
+    def _resolve_color_specs(self) -> str:
+        """Pick the colour + white/colour-mode handling; return where it came from."""
+        product_key = self._dev.get("productKey", "")
+        profile = known_profile(product_key)
+        if profile is not None:
+            self._color_spec, self._mode_spec = profile.color, profile.mode
+            source = "profile"
+        elif tsl := (self._coordinator.tsl_models.get(product_key) or {}):
+            self._color_spec = color_spec_from_tsl(tsl)
+            self._mode_spec = mode_spec_from_tsl(tsl, PROP_LIGHT_MODE)
+            source = "tsl"
+        else:
+            # last resort: infer from a live property snapshot (empty right
+            # after a restart if the first poll missed this device)
+            props = self._coordinator.props.get(self._iot_id, {})
+            self._color_spec = color_spec_from_props(props)
+            self._mode_spec = ModeSpec(identifier=PROP_LIGHT_MODE)
+            source = "props" if props else "none"
+
+        if self._color_spec is not None:
+            _LOGGER.debug(
+                "AigoSmart resolved colour profile for %s (%s, from %s):\n%s",
+                product_key, self._iot_id, source,
+                as_source_snippet(product_key, self._color_spec, self._mode_spec),
+            )
+        else:
+            _LOGGER.debug("AigoSmart: no colour property for %s (%s, from %s)",
+                          product_key, self._iot_id, source)
+        return source
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if self._spec_source in ("profile", "tsl"):
+            return
+        product_key = self._dev.get("productKey", "")
+        if not product_key:
+            return
+        # Before, the TSL was only ever fetched by a diagnostics download, so
+        # the "resolve from TSL" branch never ran in practice.
+        tsl = await self._coordinator.async_get_tsl(product_key, self._iot_id)
+        if tsl:
+            self._spec_source = self._resolve_color_specs()
+            self.async_write_ha_state()
 
     # -- state -------------------------------------------------------------
 
@@ -232,6 +275,10 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         # /thing/status/get when the list status is ambiguous) — not gated
         # here anymore, since the listBinding status is unreliable.
         self._available = self._coordinator.is_device_online(self._iot_id)
+        if props and self._spec_source == "none":
+            # Entity was created before the first property poll: without this
+            # the light stayed colour_temp-only until the entry was reloaded.
+            self._spec_source = self._resolve_color_specs()
         # While a command is settling (or its shadow hasn't caught up), the
         # cloud can still return the OLD values — applying them here is what
         # made brightness/CCT "revert" during rapid changes. Skip instead.
@@ -372,6 +419,24 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
         if self._commander is not None:
             await self._commander.async_flush()
         await super().async_will_remove_from_hass()
+
+class AigoSmartFanLightLight(AigoSmartLight):
+    """Lamp half of a ceiling fan-light (categoryKey "fanLight").
+
+    The TSL has two channels: powerstate_1 / mode_1 drive the lamp and
+    powerstate_2 / mode_2 the fan (see fan.py). Brightness, colour
+    temperature, HSVColor and LightMode are the usual light properties, so
+    everything except the switch identifier is inherited.
+    """
+
+    def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
+                 state: dict | None = None) -> None:
+        super().__init__(coordinator, dev, state)
+        self._prop_switch = PROP_FANLIGHT_LIGHT_SWITCH
+        self._attr_unique_id = f"{self._iot_id}_light"
+        self._attr_name = "Light"
+        self._apply(self._coordinator.props.get(self._iot_id, {}))
+
 
 class AigoSmartAquariumLight(AigoSmartLight):
     """Aquarium light with RGB color and preset scene effect support."""

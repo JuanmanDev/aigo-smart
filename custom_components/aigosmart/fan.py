@@ -8,6 +8,14 @@ TSL properties (verified on Aigostar tower fan a1mZFNZz7pq by hass-aigosmart):
   appointmentClosingTime int  0-24 h auto-off (number platform)
   buzzerSwitch          bool   key beep (switch platform)
 
+Fan-lights (categoryKey "fanLight", e.g. a180PpkuyP6 / a1aeYLqeLsb) expose a
+two-channel TSL instead — the fan half is handled here, the lamp half by
+light.py:
+  powerstate_2          bool   fan on/off   (powerstate_1 is the lamp)
+  windspeed             enum   1-6, 255 = "gear changing" (transient)
+  mode_2                enum   0=normal 1=natural 2=sleep 3=fresh
+  direction             bool   0=forward 1=reverse
+
 Note: CuTemperature is NOT exposed — the probe sits next to the motor and
 reads warm air, not room temperature.
 """
@@ -16,7 +24,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.fan import FanEntity, FanEntityFeature
+from homeassistant.components.fan import (
+    DIRECTION_FORWARD,
+    DIRECTION_REVERSE,
+    FanEntity,
+    FanEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -31,21 +44,25 @@ from .commander import get_commander
 from .const import (
     DOMAIN,
     FAN_PRESET_MODES,
-    PROP_FAN_BUZZER,
+    FAN_SPEED_TRANSITION,
+    FANLIGHT_PRESET_MODES,
+    FANLIGHT_SPEED_RANGE,
+    PROP_FAN_DIRECTION,
     PROP_FAN_MODE,
     PROP_FAN_OSCILLATE,
     PROP_FAN_POWER,
     PROP_FAN_SPEED,
+    PROP_FANLIGHT_FAN_MODE,
+    PROP_FANLIGHT_FAN_SWITCH,
 )
 from .coordinator import AigoDataUpdateCoordinator, EVENT_DEVICES_CHANGED
 from .discovery import DeviceRegistry, platform_for_device
-from .helpers import is_fan_device
+from .helpers import is_fan_device, is_fan_light_device
 
 _LOGGER = logging.getLogger(__name__)
 
-# windspeed enum range 1-3
+# windspeed enum range 1-3 (tower fan)
 SPEED_RANGE = (1, 3)
-PRESET_TO_VALUE = {v: k for k, v in FAN_PRESET_MODES.items()}
 
 
 async def async_setup_entry(
@@ -84,11 +101,6 @@ async def async_setup_entry(
 class AigoSmartFan(CoordinatorEntity, FanEntity):
     _attr_has_entity_name = True
     _attr_name = None
-    _attr_supported_features = (
-        FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE | FanEntityFeature.OSCILLATE
-    )
-    _attr_speed_count = 3
-    _attr_preset_modes = list(FAN_PRESET_MODES.values())
 
     def __init__(self, coordinator: AigoDataUpdateCoordinator, dev: dict,
                  state: dict | None = None) -> None:
@@ -103,10 +115,44 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
             manufacturer="Aigostar",
             model=dev.get("productName") or dev.get("productKey") or "fan",
         )
+
+        pk_catalog = (state or {}).get("pk_catalog")
+        self._fan_light = is_fan_light_device(dev, pk_catalog)
+        if self._fan_light:
+            # Fan half of a fan-light: the lamp is a separate light entity on
+            # the same device, so name this one explicitly.
+            self._attr_name = "Fan"
+            self._prop_power = PROP_FANLIGHT_FAN_SWITCH
+            self._prop_mode = PROP_FANLIGHT_FAN_MODE
+            self._speed_range = FANLIGHT_SPEED_RANGE
+            self._presets = FANLIGHT_PRESET_MODES
+            self._attr_supported_features = (
+                FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE
+                | FanEntityFeature.DIRECTION
+            )
+        else:
+            self._prop_power = PROP_FAN_POWER
+            self._prop_mode = PROP_FAN_MODE
+            self._speed_range = SPEED_RANGE
+            self._presets = FAN_PRESET_MODES
+            self._attr_supported_features = (
+                FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE
+                | FanEntityFeature.OSCILLATE
+            )
+        # Since HA 2025.2 fan.turn_on/turn_off are only routed to entities
+        # that declare TURN_ON/TURN_OFF — without them every on/off call is
+        # rejected before it reaches this integration.
+        self._attr_supported_features |= (
+            FanEntityFeature.TURN_ON | FanEntityFeature.TURN_OFF)
+        self._attr_speed_count = self._speed_range[1] - self._speed_range[0] + 1
+        self._attr_preset_modes = list(self._presets.values())
+        self._preset_to_value = {v: k for k, v in self._presets.items()}
+
         self._on = False
-        self._speed = 1
+        self._speed = self._speed_range[0]
         self._mode = 0
         self._oscillating = False
+        self._direction = DIRECTION_FORWARD
         self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
         self._apply(coordinator.props.get(self._iot_id, {}))
@@ -124,17 +170,21 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
     def percentage(self) -> int | None:
         if not self._on:
             return None
-        return ranged_value_to_percentage(SPEED_RANGE, self._speed)
+        return ranged_value_to_percentage(self._speed_range, self._speed)
 
     @property
     def preset_mode(self) -> str | None:
         if not self._on:
             return None
-        return FAN_PRESET_MODES.get(self._mode)
+        return self._presets.get(self._mode)
 
     @property
     def oscillating(self) -> bool:
         return self._oscillating
+
+    @property
+    def current_direction(self) -> str | None:
+        return self._direction if self._fan_light else None
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -145,19 +195,30 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
         self.async_write_ha_state()
 
     def _apply(self, props: dict) -> None:
-        if PROP_FAN_POWER in props:
-            self._on = int(props[PROP_FAN_POWER]) == 1
-        if PROP_FAN_SPEED in props:
+        if self._prop_power in props:
             try:
-                self._speed = max(1, min(3, int(props[PROP_FAN_SPEED])))
+                self._on = int(props[self._prop_power]) == 1
             except (TypeError, ValueError):
                 _LOGGER.debug(
                     "AigoSmart: non-numeric property value for %s",
                     self._iot_id,
                 )
-        if PROP_FAN_MODE in props:
+        if PROP_FAN_SPEED in props:
             try:
-                self._mode = int(props[PROP_FAN_MODE])
+                speed = int(props[PROP_FAN_SPEED])
+            except (TypeError, ValueError):
+                speed = None
+                _LOGGER.debug(
+                    "AigoSmart: non-numeric property value for %s",
+                    self._iot_id,
+                )
+            # 255 = "gear changing" on fan-lights: keep the last real speed
+            if speed is not None and speed != FAN_SPEED_TRANSITION:
+                low, high = self._speed_range
+                self._speed = max(low, min(high, speed))
+        if self._prop_mode in props:
+            try:
+                self._mode = int(props[self._prop_mode])
             except (TypeError, ValueError):
                 _LOGGER.debug(
                     "AigoSmart: non-numeric property value for %s",
@@ -165,6 +226,19 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
                 )
         if PROP_FAN_OSCILLATE in props:
             self._oscillating = bool(int(props[PROP_FAN_OSCILLATE]))
+        if PROP_FAN_DIRECTION in props:
+            try:
+                self._direction = (
+                    DIRECTION_REVERSE if int(props[PROP_FAN_DIRECTION])
+                    else DIRECTION_FORWARD
+                )
+            except (TypeError, ValueError):
+                pass
+
+    def _speed_for(self, percentage: int) -> int:
+        low, high = self._speed_range
+        return max(low, min(high, round(
+            percentage_to_ranged_value(self._speed_range, percentage))))
 
     async def _send(self, items: dict) -> None:
         self.async_write_ha_state()
@@ -181,35 +255,50 @@ class AigoSmartFan(CoordinatorEntity, FanEntity):
                                 self._iot_id, exc)
                 self._coordinator.mark_device_offline(self._iot_id)
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        items: dict[str, Any] = {PROP_FAN_POWER: 1}
-        if "percentage" in kwargs:
-            self._speed = round(percentage_to_ranged_value(
-                SPEED_RANGE, kwargs["percentage"]))
+    async def async_turn_on(self, percentage: int | None = None,
+                            preset_mode: str | None = None,
+                            **kwargs: Any) -> None:
+        if percentage == 0:
+            await self.async_turn_off()
+            return
+        items: dict[str, Any] = {self._prop_power: 1}
+        if percentage is not None:
+            self._speed = self._speed_for(percentage)
             items[PROP_FAN_SPEED] = self._speed
-        if "preset_mode" in kwargs and kwargs["preset_mode"] in PRESET_TO_VALUE:
-            items[PROP_FAN_MODE] = PRESET_TO_VALUE[kwargs["preset_mode"]]
+        if preset_mode in self._preset_to_value:
+            self._mode = self._preset_to_value[preset_mode]
+            items[self._prop_mode] = self._mode
         self._on = True
         await self._send(items)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         self._on = False
-        await self._send({PROP_FAN_POWER: 0})
+        await self._send({self._prop_power: 0})
 
     async def async_set_percentage(self, percentage: int) -> None:
-        self._speed = round(percentage_to_ranged_value(SPEED_RANGE, percentage))
+        # HA sends 0 for "off"; writing windspeed 0 is rejected by the cloud
+        # (6309 "tsl parse: enum specs error -> windspeed").
+        if percentage == 0:
+            await self.async_turn_off()
+            return
+        self._speed = self._speed_for(percentage)
         self._on = True
-        await self._send({PROP_FAN_POWER: 1, PROP_FAN_SPEED: self._speed})
+        await self._send({self._prop_power: 1, PROP_FAN_SPEED: self._speed})
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        if preset_mode in PRESET_TO_VALUE:
-            self._mode = PRESET_TO_VALUE[preset_mode]
+        if preset_mode in self._preset_to_value:
+            self._mode = self._preset_to_value[preset_mode]
             self._on = True
-            await self._send({PROP_FAN_POWER: 1, PROP_FAN_MODE: self._mode})
+            await self._send({self._prop_power: 1, self._prop_mode: self._mode})
 
     async def async_oscillate(self, oscillating: bool) -> None:
         self._oscillating = oscillating
         await self._send({PROP_FAN_OSCILLATE: int(oscillating)})
+
+    async def async_set_direction(self, direction: str) -> None:
+        self._direction = direction
+        await self._send(
+            {PROP_FAN_DIRECTION: int(direction == DIRECTION_REVERSE)})
 
     async def async_will_remove_from_hass(self) -> None:
         """Flush any pending local-first writes before removal."""
