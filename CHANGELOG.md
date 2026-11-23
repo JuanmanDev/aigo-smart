@@ -9,6 +9,11 @@
 - The post-write check compared the device's quantised colour values by truncation (`8.998` vs `9`), so every colour write looked unconfirmed. It now compares with a small tolerance.
 - `climate.turn_on` / `climate.turn_off` were rejected for AigoSmart climate devices: the entity did not declare `TURN_ON` / `TURN_OFF` support. They now map to the device's power property, like the HVAC mode.
 
+### Changed
+
+- CI now runs every test file (including `test_aquarium.py`, which was broken) and `ruff check`. The existing lint findings are fixed.
+- The release workflow now files the `[Unreleased]` CHANGELOG section under the new version in the release commit, and detects `BREAKING CHANGE` footers.
+
 ## [0.9.0] - 2026-11-23
 
 ### Added
