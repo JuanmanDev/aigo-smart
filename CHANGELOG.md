@@ -18,6 +18,7 @@
 
 - Entities that depend on a device property (aquarium switches, pump speed and scenes, fan key-beep, temperature/humidity sensors) were only created if that property was already known at startup, e.g. not when the device was offline during the first poll. They are now created as soon as the property shows up. Fan timers and kettles, which were only created at startup, now also appear for devices added later. Nothing is duplicated, and unique IDs are unchanged.
 - The fan timer showed 0 until the next poll after a restart; it now shows the device value straight away.
+- Changing the brightness of a light in colour mode turned it white ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)). The integration wrote the separate brightness property, which drives the white channel. In colour mode it now rewrites the colour with the new brightness (the colour's Value) and keeps the hue and saturation. Brightness in colour mode is also read back from the colour, so the slider no longer jumps. Thanks to [@Loginbug](https://github.com/Loginbug) for confirming the colour fix and reporting this.
 
 ### Removed
 

@@ -344,6 +344,14 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
                     self._iot_id,
                 )
 
+        # In colour mode the brightness lives in the colour's Value (see
+        # async_turn_on); the white brightness property is stale there.
+        if self._hs is not None and self._color_spec is not None:
+            raw = props.get(self._color_spec.identifier)
+            pct = self._color_spec.to_brightness_pct(raw) if raw is not None else None
+            if pct is not None and round(pct) != round(self._brightness / 255 * 100):
+                self._brightness = max(1, round(pct / 100 * 255))
+
     # -- commands -------------------------------------------------------------
 
     def _power_on_items(self) -> dict[str, Any]:
@@ -370,12 +378,25 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
                 self._light_mode)
         self._is_on = True
 
+        wants_hs = ATTR_HS_COLOR in kwargs and self._color_spec is not None
+        wants_ct = ATTR_COLOR_TEMP_KELVIN in kwargs
+        # In colour mode the brightness is the colour's Value: the separate
+        # brightness property drives the white channel, and writing it puts
+        # the lamp back to white (#2). So dimming in colour rewrites the colour
+        # with the new Value, like hass-aigosmart does.
+        dim_in_colour = (ATTR_BRIGHTNESS in kwargs and not wants_hs and not wants_ct
+                         and self._color_spec is not None and self._hs is not None)
+
         if ATTR_BRIGHTNESS in kwargs:
             brightness = kwargs[ATTR_BRIGHTNESS]
-            items[self._prop_brightness] = max(1, round(brightness / 255 * 100))
+            if dim_in_colour:
+                items[self._color_spec.identifier] = self._color_spec.build(
+                    *self._hs, brightness / 255 * 100)
+            elif not wants_hs:
+                items[self._prop_brightness] = max(1, round(brightness / 255 * 100))
             self._brightness = brightness
 
-        if ATTR_COLOR_TEMP_KELVIN in kwargs:
+        if wants_ct:
             k = kwargs[ATTR_COLOR_TEMP_KELVIN]
             pct = (k - KELVIN_WARM) / (KELVIN_COOL - KELVIN_WARM)
             items[self._prop_color_temp] = max(0, min(100, round(pct * 100)))
@@ -384,7 +405,9 @@ class AigoSmartLight(CoordinatorEntity, LightEntity):
             self._color_temp_k = k
             self._hs = None
 
-        if ATTR_HS_COLOR in kwargs and self._color_spec is not None:
+        if wants_hs:
+            # the requested (or current) brightness goes into the colour's
+            # Value; the white brightness property is left alone
             h, s = kwargs[ATTR_HS_COLOR]
             b = kwargs.get(ATTR_BRIGHTNESS, self._brightness) / 255 * 100
             items[self._color_spec.identifier] = self._color_spec.build(h, s, b)
