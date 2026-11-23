@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-23
+
 ### Requirements
 
 - Still Home Assistant **2024.11.0** or newer (unchanged); nothing in this release needs a newer version. The climate / water heater temperature properties that Home Assistant deprecates for 2027.11 will be migrated in a later release: the replacement API only exists from Home Assistant 2026.11.
