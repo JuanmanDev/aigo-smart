@@ -84,6 +84,7 @@ class AigoCommander:
                     return
                 items = self._pending
                 self._pending = {}
+            _LOGGER.debug("AigoSmart write for %s: %s", self._iot_id, items)
             try:
                 # Write via the CLOUD (not local ALCS): local CoAP writes are
                 # applied by the device but don't always reach the cloud
@@ -121,6 +122,13 @@ class AigoCommander:
                 continue
             if props and _matches(props, items):
                 self.skip_until = time.monotonic() + SKIP_AFTER_CONFIRM
+            elif props:
+                # Accepted by the cloud but not (yet) reported back by the
+                # device: the only trace of a write the firmware ignored.
+                _LOGGER.debug(
+                    "AigoSmart shadow for %s does not reflect the write yet: "
+                    "sent %s, shadow has %s", self._iot_id, items,
+                    {k: props.get(k) for k in items})
 
     async def _fail(self) -> None:
         """Terminal write failure: revert optimistic state + mark offline."""

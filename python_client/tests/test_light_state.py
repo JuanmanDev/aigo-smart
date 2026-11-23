@@ -10,6 +10,7 @@ ha_mock.__path__ = []
 sys.modules["homeassistant"] = ha_mock
 sys.modules["homeassistant.config_entries"] = MagicMock()
 sys.modules["homeassistant.core"] = MagicMock()
+sys.modules["homeassistant.core"].callback = lambda func: func
 sys.modules["homeassistant.helpers"] = MagicMock()
 sys.modules["homeassistant.helpers.device_registry"] = MagicMock()
 sys.modules["homeassistant.helpers.entity_platform"] = MagicMock()
@@ -48,6 +49,9 @@ class MockCoordinatorEntity:
     def __init__(self, coordinator):
         self.coordinator = coordinator
 
+    async def async_added_to_hass(self):
+        pass
+
 sys.modules["homeassistant.components.light"].LightEntity = MockLightEntity
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
 
@@ -62,6 +66,57 @@ sys.modules["custom_components.aigosmart.light"] = light_mod
 spec.loader.exec_module(light_mod)
 
 AigoSmartLight = light_mod.AigoSmartLight
+
+
+WIFI_DOWNLIGHT_TSL = {"properties": [
+    {"identifier": "LightMode", "dataType": {"type": "enum", "specs": {"0": "白光", "1": "彩光"}}},
+    {"identifier": "HSVColor", "dataType": {"type": "struct", "specs": [
+        {"identifier": "Hue", "dataType": {"type": "double", "specs": {"max": "360"}}},
+        {"identifier": "Saturation", "dataType": {"type": "double", "specs": {"max": "100"}}},
+        {"identifier": "Value", "dataType": {"type": "double", "specs": {"max": "100"}}},
+    ]}},
+]}
+
+
+class TestColorSpecResolution(unittest.IsolatedAsyncioTestCase):
+    """Issue #3: colour support must not depend on the props snapshot at creation."""
+
+    def setUp(self):
+        self.coordinator = MagicMock()
+        self.coordinator.props = {}
+        self.coordinator.tsl_models = {}
+        self.coordinator.is_device_online.return_value = True
+        self.dev = {"iotId": "spot", "productKey": "a1CuHgtZg6v", "netType": "NET_WIFI"}
+
+    def test_empty_props_then_poll_enables_hs(self):
+        light = AigoSmartLight(self.coordinator, self.dev)
+        self.assertEqual(light.supported_color_modes, {ColorMode.COLOR_TEMP})
+        self.coordinator.props = {"spot": {
+            "LightSwitch": 1, "LightMode": 0,
+            "HSVColor": {"Hue": 306, "Saturation": 77, "Value": 100},
+        }}
+        light._handle_coordinator_update()
+        self.assertIn(ColorMode.HS, light.supported_color_modes)
+
+    async def test_tsl_fetched_when_entity_added(self):
+        async def _get_tsl(pk, iot_id):
+            self.coordinator.tsl_models[pk] = WIFI_DOWNLIGHT_TSL
+            return WIFI_DOWNLIGHT_TSL
+
+        self.coordinator.async_get_tsl = AsyncMock(side_effect=_get_tsl)
+        light = AigoSmartLight(self.coordinator, self.dev)
+        await light.async_added_to_hass()
+        self.coordinator.async_get_tsl.assert_awaited_once_with("a1CuHgtZg6v", "spot")
+        self.assertEqual(light._spec_source, "tsl")
+        self.assertEqual(light._color_spec.identifier, "HSVColor")
+        self.assertEqual(light._mode_spec.color_value, 1)
+
+    async def test_pinned_profile_skips_tsl_fetch(self):
+        self.coordinator.async_get_tsl = AsyncMock()
+        dev = dict(self.dev, productKey="a1uh0UxUu3Z")
+        light = AigoSmartLight(self.coordinator, dev)
+        await light.async_added_to_hass()
+        self.coordinator.async_get_tsl.assert_not_awaited()
 
 
 class TestLightState(unittest.IsolatedAsyncioTestCase):

@@ -18,6 +18,7 @@ Online-state handling:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from datetime import timedelta
@@ -74,6 +75,8 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         self._poll_count = 0
         # productKey -> TSL model dict (lazy cache)
         self.tsl_models: dict[str, dict] = {}
+        # serialises TSL fetches so N lights of one product make one request
+        self._tsl_lock = asyncio.Lock()
         # data layout:
         #   {"devices": [ {device dict} ],
         #    "props":   { iotId: {prop: value} }}
@@ -218,17 +221,23 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Post-command device refresh failed for %s: %s", iot_id, exc)
 
     async def async_get_tsl(self, product_key: str, iot_id: str) -> dict:
-        """Fetch (and cache) the TSL model for a product."""
-        if product_key in self.tsl_models:
-            return self.tsl_models[product_key]
-        try:
-            tsl = await self.hass.async_add_executor_job(
-                self.client.get_tsl, iot_id)
-            self.tsl_models[product_key] = tsl or {}
-        except Exception as exc:
-            _LOGGER.debug("TSL fetch failed for %s: %s", product_key, exc)
-            self.tsl_models[product_key] = {}
-        return self.tsl_models[product_key]
+        """Fetch (and cache) the TSL model for a product.
+
+        Failures are not cached, so a transient error at startup does not
+        disable TSL-based detection until the next restart.
+        """
+        async with self._tsl_lock:
+            if self.tsl_models.get(product_key):
+                return self.tsl_models[product_key]
+            try:
+                tsl = await self.hass.async_add_executor_job(
+                    self.client.get_tsl, iot_id)
+            except Exception as exc:
+                _LOGGER.debug("TSL fetch failed for %s: %s", product_key, exc)
+                return {}
+            if tsl:
+                self.tsl_models[product_key] = tsl
+            return tsl or {}
 
     def _raise_if_auth_failed(self) -> None:
         """Hand a refused re-login to HA's re-authentication flow."""

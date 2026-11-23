@@ -11,6 +11,8 @@
 - Diagnostics downloads no longer expose the account (`identityAlias`, `identityId`), device identifiers (`iotId`, `deviceName`, TSL `link`) or ALCS local-control keys. They are redacted, and properties are keyed by a `device_N` alias instead of the iotId.
 - `fan.turn_on` / `fan.turn_off` were rejected by Home Assistant for every AigoSmart fan: the entity did not declare `TURN_ON` / `TURN_OFF` support, which HA requires since 2025.2. `async_turn_on` now also accepts HA's positional arguments.
 - Setting a fan to 0 % sent the invalid `windspeed: 0` (cloud error 6309). It now turns the fan off.
+- Colour support for lights without a pinned profile was guessed once at startup from a property snapshot, and the device TSL was never downloaded outside diagnostics. Lights restarted with an empty snapshot stayed colour-temperature-only until a reload. The TSL is now fetched when each light is added, colour support is re-evaluated when properties arrive, and failed TSL fetches are retried ([#3](https://github.com/JuanmanDev/aigo-smart/issues/3)).
+- Writes are now logged at debug level, together with a debug line when the device does not report back what was sent, so writes the firmware ignores leave a trace.
 
 ## [0.7.0] - 2026-10-24
 
