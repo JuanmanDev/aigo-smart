@@ -7,6 +7,7 @@
 - Colour changes on fan-light lamps and other colour lights were sometimes ignored (most visibly red) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2), [#3](https://github.com/JuanmanDev/aigo-smart/issues/3)). Every colour write bundled the value with a redundant switch-on and the white/colour `LightMode`. The cloud accepted it, but the lamp could drop the colour. The white/colour mode is now written in a separate write after the colour or colour temperature, and only when it changes. Fan-light lamps no longer get a redundant `powerstate_1: 1` while on, which matches the fan-speed fix. Thanks to [@Loginbug](https://github.com/Loginbug) for the debug log that showed it.
 - Hue 360 (or anything that rounds to it) is now sent as 0, which is the same red.
 - The post-write check compared the device's quantised colour values by truncation (`8.998` vs `9`), so every colour write looked unconfirmed. It now compares with a small tolerance.
+- `climate.turn_on` / `climate.turn_off` were rejected for AigoSmart climate devices: the entity did not declare `TURN_ON` / `TURN_OFF` support. They now map to the device's power property, like the HVAC mode.
 
 ## [0.9.0] - 2026-11-23
 
