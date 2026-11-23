@@ -24,7 +24,7 @@ from . import config_validation as cv
 from .api import AigoSmartApiClient, InvalidCredentialsError, NeedSecurityCodeError
 from .const import CONF_SECURITY_CODE, DOMAIN
 from .coordinator import AigoDataUpdateCoordinator
-from .discovery import DeviceRegistry, load_pk_catalog, platform_for_device
+from .discovery import DeviceRegistry, load_pk_catalog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,19 +77,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
     hass.data[DOMAIN][entry.entry_id] = state
 
-    # Devices no platform knows about used to be skipped silently (only a
-    # DEBUG line, and only from a code path that is never called).
-    from .helpers import is_fan_device, is_kettle_device
-    for dev in coordinator.devices:
-        if (platform_for_device(dev, pk_catalog) is None
-                and not is_fan_device(dev) and not is_kettle_device(dev)):
-            _LOGGER.info(
-                "AigoSmart: '%s' (category=%s, productKey=%s, product=%s) is not "
-                "supported yet, so no entities were created for it. Please open an "
-                "issue at https://github.com/JuanmanDev/aigo-smart/issues and attach "
-                "the device's 'Download diagnostics' file",
-                dev.get("nickName") or dev.get("deviceName"), dev.get("categoryKey"),
-                dev.get("productKey"), dev.get("productName"))
+    # Devices no platform can create entities for get a repair issue (one per
+    # productKey) linking to the device-support form. Re-evaluated on every
+    # poll, so it disappears once the device is supported or removed.
+    # (imported here, like the other helpers, to keep package import acyclic)
+    from .unsupported import async_update_unsupported_issues
+    async_update_unsupported_issues(hass)
+    entry.async_on_unload(coordinator.async_add_listener(
+        lambda: async_update_unsupported_issues(hass)))
 
     # ---- Layer 1: cloud autodiscovery ------------------------------------
     # Entities added by platforms during async_setup_entry and via dispatcher on every new device.
@@ -159,6 +154,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        # drop issues for devices no remaining entry has
+        from .unsupported import async_update_unsupported_issues
+        async_update_unsupported_issues(hass)
         if not hass.data[DOMAIN]:
             for svc in (SERVICE_SYNC, SERVICE_DISCOVER_LOCAL,
                         SERVICE_ADD_DEVICE, SERVICE_DISCOVER_BLE):
@@ -167,3 +165,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             from .local_listener import async_stop_listener
             await async_stop_listener(hass)
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Integration entry deleted: remove its unsupported-device repair issues."""
+    from .unsupported import (
+        async_delete_all_unsupported_issues,
+        async_update_unsupported_issues,
+    )
+    if not hass.data.get(DOMAIN):
+        async_delete_all_unsupported_issues(hass)
+    else:
+        async_update_unsupported_issues(hass)

@@ -63,5 +63,11 @@
       "not_loaded": "Primero hay que configurar la integración AigoSmart.",
       "no_devices_found": "No se encontraron dispositivos Aigostar en modo emparejamiento. Mantén pulsado el botón de encendido unos 5 segundos e inténtalo de nuevo."
     }
+  },
+  "issues": {
+    "unsupported_device": {
+      "title": "{name} todavía no es compatible",
+      "description": "AigoSmart encontró **{name}** ({product}, categoría `{category}`, productKey `{product_key}`), pero este tipo de dispositivo todavía no es compatible, así que no tiene entidades en Home Assistant.\n\nSelecciona **Más información** para abrir una solicitud de soporte y adjunta los diagnósticos del dispositivo (página del dispositivo → ⋮ → Descargar diagnósticos). Este aviso desaparece solo cuando una versión de la integración sea compatible con el dispositivo o cuando lo quites de tu cuenta AigoSmart."
+    }
   }
 }

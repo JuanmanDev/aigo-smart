@@ -63,5 +63,11 @@
       "not_loaded": "The AigoSmart integration must be set up first.",
       "no_devices_found": "No Aigostar devices in pairing mode were found. Hold the device's power button for ~5 seconds and try again."
     }
+  },
+  "issues": {
+    "unsupported_device": {
+      "title": "{name} is not supported yet",
+      "description": "AigoSmart found **{name}** ({product}, category `{category}`, productKey `{product_key}`), but this kind of device is not supported yet, so it has no entities in Home Assistant.\n\nSelect **Learn more** to open a device support request and attach the device's diagnostics (device page → ⋮ → Download diagnostics). This message disappears automatically once a version of the integration supports the device, or when the device is removed from your AigoSmart account."
+    }
   }
 }

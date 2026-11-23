@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Devices the integration can't create entities for yet (robot vacuums, cameras, litter boxes, ...) now get a **Repairs** issue in Settings → System → Repairs: one per productKey, naming the devices, with a *Learn more* link to the device-support form. It disappears by itself once a newer version supports the device, or when the device is removed from the account. Translated to English and Spanish.
+
 ### Fixed
 
 - Entities that depend on a device property (aquarium switches, pump speed and scenes, fan key-beep, temperature/humidity sensors) were only created if that property was already known at startup, e.g. not when the device was offline during the first poll. They are now created as soon as the property shows up. Fan timers and kettles, which were only created at startup, now also appear for devices added later. Nothing is duplicated, and unique IDs are unchanged.
