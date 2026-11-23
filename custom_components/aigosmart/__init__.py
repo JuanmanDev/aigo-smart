@@ -24,7 +24,7 @@ from . import config_validation as cv
 from .api import AigoSmartApiClient, InvalidCredentialsError, NeedSecurityCodeError
 from .const import CONF_SECURITY_CODE, DOMAIN
 from .coordinator import AigoDataUpdateCoordinator
-from .discovery import DeviceRegistry, load_pk_catalog
+from .discovery import DeviceRegistry, load_pk_catalog, platform_for_device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +76,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "pk_catalog": pk_catalog,
     }
     hass.data[DOMAIN][entry.entry_id] = state
+
+    # Devices no platform knows about used to be skipped silently (only a
+    # DEBUG line, and only from a code path that is never called).
+    from .helpers import is_fan_device, is_kettle_device
+    for dev in coordinator.devices:
+        if (platform_for_device(dev, pk_catalog) is None
+                and not is_fan_device(dev) and not is_kettle_device(dev)):
+            _LOGGER.info(
+                "AigoSmart: '%s' (category=%s, productKey=%s, product=%s) is not "
+                "supported yet, so no entities were created for it. Please open an "
+                "issue at https://github.com/JuanmanDev/aigo-smart/issues and attach "
+                "the device's 'Download diagnostics' file",
+                dev.get("nickName") or dev.get("deviceName"), dev.get("categoryKey"),
+                dev.get("productKey"), dev.get("productName"))
 
     # ---- Layer 1: cloud autodiscovery ------------------------------------
     # Entities added by platforms during async_setup_entry and via dispatcher on every new device.
