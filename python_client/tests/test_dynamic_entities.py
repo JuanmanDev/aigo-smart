@@ -16,6 +16,7 @@ for _mod in (
     "homeassistant.helpers.update_coordinator", "homeassistant.const",
     "homeassistant.exceptions", "homeassistant.components",
     "homeassistant.components.light", "homeassistant.components.number",
+    "homeassistant.components.button",
     "homeassistant.components.select", "homeassistant.components.sensor",
     "homeassistant.components.switch", "homeassistant.components.water_heater",
     "homeassistant.util", "homeassistant.util.dt",
@@ -38,7 +39,8 @@ class MockCoordinatorEntity:
 
 for _mod, _cls in (("number", "NumberEntity"), ("select", "SelectEntity"),
                    ("sensor", "SensorEntity"), ("switch", "SwitchEntity"),
-                   ("water_heater", "WaterHeaterEntity"), ("light", "LightEntity")):
+                   ("water_heater", "WaterHeaterEntity"), ("light", "LightEntity"),
+                   ("number", "RestoreNumber"), ("button", "ButtonEntity")):
     setattr(sys.modules[f"homeassistant.components.{_mod}"], _cls, type(_cls, (_Entity,), {}))
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
 sys.modules["homeassistant.core"].callback = lambda func: func
@@ -65,7 +67,8 @@ def _load(name):
 
 
 discovery = _load("discovery")
-platforms = {name: _load(name) for name in ("switch", "select", "sensor", "number", "water_heater")}
+platforms = {name: _load(name)
+             for name in ("switch", "select", "sensor", "number", "water_heater", "button")}
 
 AQUARIUM = {"iotId": "aq", "productKey": "a191KWgv5BZ", "categoryKey": "Aquarium",
             "productName": "Aquarium"}
@@ -102,6 +105,8 @@ class Harness:
                       "pk_catalog": {}, "hass": MagicMock(), "client": MagicMock()}
         self.hass = MagicMock()
         self.hass.data = {"aigosmart": {"entry": self.state}}
+        # background TSL fetches for pet devices are not run here
+        self.hass.async_create_task.side_effect = lambda coro: coro.close()
         self.new_device_listeners = []
         self.hass.bus.async_listen.side_effect = (
             lambda event, cb: self.new_device_listeners.append(cb) or (lambda: None))
@@ -182,6 +187,33 @@ class TestDevicesAddedLater(unittest.TestCase):
         h = Harness([TOWER_FAN], {"fan": dict(LATE_PROPS["fan"], appointmentClosingTime=5)})
         h.setup("number")
         self.assertEqual(h.added["number"][0].native_value, 5.0)
+
+
+
+class TestPetTslFetch(unittest.TestCase):
+    """The feeder's manual-feed button appears once its TSL has been fetched."""
+
+    def test_feed_button_after_tsl_fetch(self):
+        feeder = {"iotId": "feeder", "productKey": "a1xEttfYqF2", "categoryKey": "petFeeder"}
+        h = Harness([feeder], {"feeder": {"lampSwitch": 1}})
+        h.coordinator.tsl_models = {}
+        tsl = {"properties": [{"identifier": "manualFeeding", "accessMode": "rw",
+                               "dataType": {"type": "int", "specs": {"min": "1", "max": "24"}}}]}
+
+        async def _get_tsl(pk, iot_id):
+            h.coordinator.tsl_models[pk] = tsl
+            return tsl
+
+        h.coordinator.async_get_tsl.side_effect = _get_tsl
+        pending = []
+        h.hass.async_create_task.side_effect = pending.append
+        h.setup("button")
+        self.assertEqual(h.added.get("button", []), [])
+        self.assertEqual(len(pending), 1)          # one fetch per product
+        h.poll()
+        self.assertEqual(len(pending), 1)          # not re-requested while pending
+        asyncio.run(pending[0])
+        self.assertEqual(h.unique_ids("button"), ["feeder_pet_manualFeeding_button"])
 
 
 if __name__ == "__main__":

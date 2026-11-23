@@ -17,6 +17,7 @@ from .const import DOMAIN, FANLIGHT_TIMER_MAX_MIN, PROP_FAN_TIMER
 from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry
 from .helpers import is_fan_device, is_fan_light_device
+from .pet import setup_pet_platform
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +69,9 @@ async def async_setup_entry(
     entry.async_on_unload(
         hass.bus.async_listen(EVENT_DEVICES_CHANGED, _async_handle_airfryer))
     entry.async_on_unload(coordinator.async_add_listener(_async_handle_airfryer))
+
+    # Pet feeder manual-feed portions
+    setup_pet_platform(hass, entry, state, "number", async_add_entities)
 
 
 class AigoSmartFanTimer(CoordinatorEntity, NumberEntity):

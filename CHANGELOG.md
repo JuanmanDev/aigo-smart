@@ -5,6 +5,13 @@
 ### Added
 
 - Devices the integration can't create entities for yet (robot vacuums, cameras, litter boxes, ...) now get a **Repairs** issue in Settings → System → Repairs: one per productKey, naming the devices, with a *Learn more* link to the device-support form. It disappears by itself once a newer version supports the device, or when the device is removed from the account. Translated to English and Spanish.
+- Pet feeder: **Feed** button and **Feed portions** setting (1-24, from the device TSL) for manual feeding ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)). Only pressing Feed dispenses; the portions setting is local, restored after a restart, and never sent on its own. Also a **Voice on feed** switch and approximate grams fed today. Thanks to [@emanuelrg123](https://github.com/emanuelrg123) for the device diagnostics and the before/after capture of a manual feed.
+- Pet water fountain: **Reset filter** and **Reset cleaning** buttons ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)).
+
+### Changed
+
+- Pet fountain / feeder status codes now have names taken from the device TSL (e.g. feeder error `low_food` / `food_jammed` / `low_battery`, feed state `feeding`, power source `mains` / `battery`, fountain water status `low_water`); unknown codes still show the raw number, and the code is kept as an attribute. Entity names lose the "code" suffix; entity IDs don't change. The TSL of pet devices is now fetched once, and write controls are skipped if the TSL marks a property read-only.
+- Pet fountain: every write now carries a single property (two quick changes are sent one after the other), as with the fan-light and colour fixes, while the cause of ignored fountain commands is investigated ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)).
 
 ### Fixed
 

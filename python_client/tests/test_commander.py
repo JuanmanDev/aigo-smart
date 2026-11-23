@@ -219,5 +219,18 @@ class TestCommander(unittest.TestCase):
         self.assertEqual(client.writes, [{"HSVColor": {"Hue": 0}, "LightMode": 0}])
 
 
+    def test_one_per_write_splits_batches(self):
+        client = FakeClient()
+        cmd = AigoCommander(FakeHass(), client, "iot1")
+        cmd.one_per_write = True
+
+        async def scenario():
+            await cmd.async_send({"mode": 1, "WaterGear": 3})
+            await cmd.async_flush()
+
+        run(scenario())
+        self.assertEqual(client.writes, [{"mode": 1}, {"WaterGear": 3}])
+
+
 if __name__ == "__main__":
     unittest.main()

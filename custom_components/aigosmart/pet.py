@@ -27,9 +27,21 @@ Pet feeder (categoryKey "petFeeder", e.g. a1xEttfYqF2):
                portions, enabled (verified against the app's schedule:
                7F0C000201 = every day 12:00, 2 portions, on)
 
-Manual feeding is deliberately not exposed: it is not a property in the
-snapshot (probably a TSL service), and guessing its identifier could make
-the feeder dispense food.
+TSL (device diagnostics, #4) confirms the enums above and adds:
+  fountain  errorCode 0 normal / 236 water level too low
+            WaterStatus 0 normal / 1 low water
+            FilterReset / CleaningReset (rw bool) -> reset buttons
+  feeder    manualFeeding rw int 1-24 portions (write-only: never in the
+            property snapshot; the app's manual feed adds a feedRecord entry)
+            errorCode 0 normal / 244 low food / 245 food jammed / 247 low battery
+            feedState 0 standby / 1 feeding / 2 done
+            batteryState 0 mains / 1 battery
+            recordControl rw bool: play the recorded voice when feeding
+            weightPer enum {7: ~7 g per portion}
+            restoreFactory is deliberately never exposed
+Manual feeding is a button: it can only fire when pressed, never on startup,
+reload or state restore. The portions are a local setting (not written to
+the device until Feed is pressed).
 """
 from __future__ import annotations
 
@@ -37,6 +49,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from homeassistant.components.button import ButtonEntity
+from homeassistant.components.number import NumberMode, RestoreNumber
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -50,6 +64,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .color_model import normalize_tsl
 from .commander import get_commander
 from .const import DOMAIN
 from .coordinator import EVENT_DEVICES_CHANGED, AigoDataUpdateCoordinator
@@ -59,6 +74,42 @@ _LOGGER = logging.getLogger(__name__)
 
 FOUNTAIN_MODES = {0: "Continuous", 1: "Intermittent"}
 FOUNTAIN_FLOW = {1: "Low", 2: "Medium", 3: "High"}
+FOUNTAIN_ERRORS = {0: "normal", 236: "water_level_too_low"}
+FOUNTAIN_WATER_STATUS = {0: "normal", 1: "low_water"}
+FEEDER_ERRORS = {0: "normal", 244: "low_food", 245: "food_jammed", 247: "low_battery"}
+FEED_STATES = {0: "standby", 1: "feeding", 2: "done"}
+FEEDER_POWER = {0: "mains", 1: "battery"}
+
+PROP_MANUAL_FEEDING = "manualFeeding"
+MANUAL_FEED_DEFAULT_RANGE = (1, 24)
+
+
+def tsl_property(tsl: Any, identifier: str) -> dict | None:
+    """The TSL property definition for ``identifier``, if the TSL has one."""
+    for prop in normalize_tsl(tsl).get("properties", []) or []:
+        if isinstance(prop, dict) and prop.get("identifier") == identifier:
+            return prop
+    return None
+
+
+def tsl_writable(tsl: Any, identifier: str) -> bool | None:
+    """True / False from the TSL accessMode; None when the TSL is unknown."""
+    if not normalize_tsl(tsl).get("properties"):
+        return None
+    prop = tsl_property(tsl, identifier)
+    if prop is None:
+        return None
+    return "w" in str(prop.get("accessMode", ""))
+
+
+def tsl_int_range(tsl: Any, identifier: str,
+                  default: tuple[int, int]) -> tuple[int, int]:
+    prop = tsl_property(tsl, identifier) or {}
+    specs = (prop.get("dataType") or {}).get("specs") or {}
+    try:
+        return int(specs["min"]), int(specs["max"])
+    except (KeyError, TypeError, ValueError):
+        return default
 
 
 # ------------------------------------------------------------------ parsing --
@@ -124,6 +175,7 @@ class PetEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self._coordinator = coordinator
         self._iot_id = dev.get("iotId", "")
+        self._product_key = dev.get("productKey", "")
         props = coordinator.props.get(self._iot_id, {})
         self._prop = next((p for p in self.identifiers() if p in props),
                           self.identifiers()[0])
@@ -136,11 +188,27 @@ class PetEntity(CoordinatorEntity):
         )
         self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
+        if self._commander is not None and is_pet_fountain_device(dev):
+            # the fountain ignores HA's writes in some setups (#4): keep every
+            # write to a single property, like the fan / colour fixes
+            self._commander.one_per_write = True
         self._apply(props)
+
+    # entities that write must not be created if the TSL marks them read-only
+    _writes = False
 
     @classmethod
     def identifiers(cls) -> tuple[str, ...]:
         return cls._props or (cls._prop,)
+
+    @classmethod
+    def wanted(cls, props: dict, tsl: dict) -> bool:
+        """Create this entity for a device with these properties / TSL?"""
+        if not any(p in props for p in cls.identifiers()):
+            return False
+        if cls._writes and tsl_writable(tsl, cls.identifiers()[0]) is False:
+            return False
+        return True
 
     @classmethod
     def key(cls) -> str:
@@ -189,6 +257,7 @@ class PetEntity(CoordinatorEntity):
 
 class PetSwitch(PetEntity, SwitchEntity):
     _is_on = False
+    _writes = True
 
     @property
     def is_on(self) -> bool:
@@ -223,6 +292,14 @@ class FeederLight(PetSwitch):
     _default_name = "Aigo pet feeder"
 
 
+class FeederVoice(PetSwitch):
+    _prop = "recordControl"
+    _attr_name = "Voice on feed"
+    _attr_icon = "mdi:account-voice"
+    _attr_entity_category = EntityCategory.CONFIG
+    _default_name = "Aigo pet feeder"
+
+
 class FeederSlowFeed(PetSwitch):
     _prop = "slowFeed"
     _attr_name = "Slow feed"
@@ -235,6 +312,7 @@ class FeederSlowFeed(PetSwitch):
 
 class PetSelect(PetEntity, SelectEntity):
     _mapping: dict[int, str] = {}
+    _writes = True
     _current: str | None = None
 
     @property
@@ -339,41 +417,57 @@ class FountainWaterLevel(PetNumberSensor):
 
 
 class _CodeSensor(PetNumberSensor):
-    """Raw status / error code whose meaning is not known yet."""
+    """Status / error code, named from the device TSL; unknown codes stay raw."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:information-outline"
+    _names: dict[int, str] = {}
+
+    @property
+    def native_value(self) -> str | int | float | None:
+        if isinstance(self._value, int) and self._value in self._names:
+            return self._names[self._value]
+        return self._value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"code": self._value}
 
 
 class FountainWaterStatus(_CodeSensor):
     _prop = "WaterStatus"
-    _attr_name = "Water status code"
+    _attr_name = "Water status"
+    _names = FOUNTAIN_WATER_STATUS
     _default_name = "Aigo pet fountain"
 
 
 class FountainError(_CodeSensor):
     _prop = "errorCode"
-    _attr_name = "Error code"
+    _attr_name = "Error"
+    _names = FOUNTAIN_ERRORS
     _attr_icon = "mdi:alert-circle-outline"
     _default_name = "Aigo pet fountain"
 
 
 class FeederError(_CodeSensor):
     _prop = "errorCode"
-    _attr_name = "Error code"
+    _attr_name = "Error"
+    _names = FEEDER_ERRORS
     _attr_icon = "mdi:alert-circle-outline"
     _default_name = "Aigo pet feeder"
 
 
 class FeederFeedState(_CodeSensor):
     _prop = "feedState"
-    _attr_name = "Feed state code"
+    _attr_name = "Feed state"
+    _names = FEED_STATES
     _default_name = "Aigo pet feeder"
 
 
 class FeederBatteryState(_CodeSensor):
     _prop = "batteryState"
-    _attr_name = "Battery state code"
+    _attr_name = "Power source"
+    _names = FEEDER_POWER
     _default_name = "Aigo pet feeder"
 
 
@@ -415,6 +509,17 @@ class FeederLastFeed(_FeedRecordSensor):
         return {"portions": self._records[0][1]} if self._records else {}
 
 
+def _grams_per_portion(tsl: Any) -> int | None:
+    """weightPer is an enum with the portion size as its only value (7 g)."""
+    specs = ((tsl_property(tsl, "weightPer") or {}).get("dataType") or {}).get("specs")
+    if isinstance(specs, dict) and len(specs) == 1:
+        try:
+            return int(next(iter(specs)))
+        except ValueError:
+            return None
+    return None
+
+
 class FeederPortionsToday(_FeedRecordSensor):
     _attr_name = "Portions today"
     _attr_icon = "mdi:bowl-mix"
@@ -427,6 +532,12 @@ class FeederPortionsToday(_FeedRecordSensor):
     @property
     def native_value(self) -> int:
         return portions_since(self._records, dt_util.start_of_local_day())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        grams = _grams_per_portion(
+            self._coordinator.tsl_models.get(self._product_key) or {})
+        return {"approx_grams": self.native_value * grams} if grams else {}
 
 
 class FeederPlan(PetEntity, SensorEntity):
@@ -452,9 +563,143 @@ class FeederPlan(PetEntity, SensorEntity):
         return {"slots": self._slots}
 
 
+# --------------------------------------------------------------- manual feed --
+
+class _ManualFeedEntity(PetEntity):
+    """Created from the TSL: manualFeeding is never in the property snapshot."""
+
+    _prop = PROP_MANUAL_FEEDING
+    _default_name = "Aigo pet feeder"
+
+    @classmethod
+    def wanted(cls, props: dict, tsl: dict) -> bool:
+        return bool(tsl_writable(tsl, PROP_MANUAL_FEEDING))
+
+    def _apply(self, props: dict) -> None:
+        pass
+
+    def _portions_store(self) -> dict[str, int]:
+        return self._state.setdefault("pet_feed_portions", {})
+
+
+class FeederFeedPortions(_ManualFeedEntity, RestoreNumber):
+    """How many portions the Feed button dispenses (local setting only).
+
+    The last value is restored after a restart. Restoring or changing it never
+    writes to the feeder; only pressing Feed does.
+    """
+
+    _attr_name = "Feed portions"
+    _attr_icon = "mdi:numeric"
+    _attr_mode = NumberMode.BOX
+    _attr_native_step = 1
+    _attr_entity_category = EntityCategory.CONFIG
+
+    @classmethod
+    def key(cls) -> str:
+        return "manualFeeding_portions"
+
+    def __init__(self, coordinator, dev, state) -> None:
+        self._state = state if state is not None else {}
+        super().__init__(coordinator, dev, state)
+        tsl = coordinator.tsl_models.get(dev.get("productKey", "")) or {}
+        low, high = tsl_int_range(tsl, PROP_MANUAL_FEEDING, MANUAL_FEED_DEFAULT_RANGE)
+        self._attr_native_min_value = low
+        self._attr_native_max_value = high
+        self._portions_store().setdefault(self._iot_id, low)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last = await self.async_get_last_number_data()
+        if last is not None and last.native_value is not None:
+            low, high = self._attr_native_min_value, self._attr_native_max_value
+            self._portions_store()[self._iot_id] = max(low, min(high, int(last.native_value)))
+
+    @property
+    def native_value(self) -> int:
+        return self._portions_store()[self._iot_id]
+
+    async def async_set_native_value(self, value: float) -> None:
+        # local only: nothing is sent to the feeder here
+        self._portions_store()[self._iot_id] = int(value)
+        self.async_write_ha_state()
+
+
+class FeederFeedButton(_ManualFeedEntity, ButtonEntity):
+    """Dispense the configured portions now (like the app's manual feed)."""
+
+    _attr_name = "Feed"
+    _attr_icon = "mdi:food-drumstick"
+
+    @classmethod
+    def key(cls) -> str:
+        return "manualFeeding_button"
+
+    def __init__(self, coordinator, dev, state) -> None:
+        self._state = state if state is not None else {}
+        super().__init__(coordinator, dev, state)
+        tsl = coordinator.tsl_models.get(dev.get("productKey", "")) or {}
+        self._range = tsl_int_range(tsl, PROP_MANUAL_FEEDING, MANUAL_FEED_DEFAULT_RANGE)
+
+    async def async_press(self) -> None:
+        low, high = self._range
+        portions = self._portions_store().get(self._iot_id, low)
+        portions = max(low, min(high, int(portions)))
+        _LOGGER.info("AigoSmart manual feed for %s: %d portion(s)", self._iot_id, portions)
+        items = {PROP_MANUAL_FEEDING: portions}
+        if self._commander is not None:
+            await self._commander.async_send(items)
+            return
+        await self.hass.async_add_executor_job(
+            self._coordinator.client.set_properties, self._iot_id, items)
+
+
+class _FountainResetButton(PetEntity, ButtonEntity):
+    """Write 1 to a reset property (TSL rw bool, not in the snapshot)."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _default_name = "Aigo pet fountain"
+
+    @classmethod
+    def wanted(cls, props: dict, tsl: dict) -> bool:
+        return bool(tsl_writable(tsl, cls._prop))
+
+    def _apply(self, props: dict) -> None:
+        pass
+
+    async def async_press(self) -> None:
+        items = {self._prop: 1}
+        if self._commander is not None:
+            await self._commander.async_send(items)
+            return
+        await self.hass.async_add_executor_job(
+            self._coordinator.client.set_properties, self._iot_id, items)
+
+
+class FountainResetFilter(_FountainResetButton):
+    _prop = "FilterReset"
+    _attr_name = "Reset filter"
+    _attr_icon = "mdi:air-filter"
+
+
+class FountainResetCleaning(_FountainResetButton):
+    _prop = "CleaningReset"
+    _attr_name = "Reset cleaning"
+    _attr_icon = "mdi:spray-bottle"
+
+
+class FeederVoicePrompt(_CodeSensor):
+    _prop = "recordExists"
+    _attr_name = "Voice prompt recorded"
+    _attr_icon = "mdi:microphone"
+    _names = {0: "no", 1: "yes"}
+    _default_name = "Aigo pet feeder"
+
+
 # ------------------------------------------------------------------- factory --
 
 FOUNTAIN_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
+    "button": (FountainResetFilter, FountainResetCleaning),
     "switch": (FountainPump,),
     "select": (FountainMode, FountainFlow),
     "sensor": (FountainWaterLevel, FountainFilterRemaining,
@@ -463,9 +708,11 @@ FOUNTAIN_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
 }
 
 FEEDER_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
-    "switch": (FeederLight, FeederSlowFeed),
+    "button": (FeederFeedButton,),
+    "number": (FeederFeedPortions,),
+    "switch": (FeederLight, FeederSlowFeed, FeederVoice),
     "sensor": (FeederLastFeed, FeederPortionsToday, FeederPlan, FeederBattery,
-               FeederBatteryState, FeederFeedState, FeederError),
+               FeederBatteryState, FeederFeedState, FeederError, FeederVoicePrompt),
 }
 
 
@@ -488,9 +735,10 @@ def make_pet_entities(platform: str, coordinator: AigoDataUpdateCoordinator,
         else:
             continue
         props = coordinator.props.get(iot_id, {})
+        tsl = coordinator.tsl_models.get(dev.get("productKey", "")) or {}
         for cls in classes:
             key = f"{iot_id}_pet_{cls.key()}_{platform}"
-            if key in known or not any(p in props for p in cls.identifiers()):
+            if key in known or not cls.wanted(props, tsl):
                 continue
             known.add(key)
             out.append(cls(coordinator, dev, state))
@@ -507,6 +755,32 @@ def setup_pet_platform(hass, entry, state: dict, platform: str,
 
     @callback
     def _async_add(*_args) -> None:
+        new = make_pet_entities(platform, coordinator, state, pk_catalog,
+                                registry._known[platform])
+        if new:
+            async_add_entities(new)
+        _async_request_tsl()
+
+    @callback
+    def _async_request_tsl() -> None:
+        """Fetch each pet product's TSL once (gates manual feed / writes)."""
+        requested: set[str] = state.setdefault("pet_tsl_requested", set())
+        for dev in coordinator.devices:
+            pk, iot_id = dev.get("productKey", ""), dev.get("iotId", "")
+            if not pk or not iot_id or pk in requested or pk in coordinator.tsl_models:
+                continue
+            if not (is_pet_fountain_device(dev, pk_catalog)
+                    or is_pet_feeder_device(dev, pk_catalog)):
+                continue
+            requested.add(pk)
+            hass.async_create_task(_async_fetch_tsl(pk, iot_id))
+
+    async def _async_fetch_tsl(pk: str, iot_id: str) -> None:
+        tsl = await coordinator.async_get_tsl(pk, iot_id)
+        if not tsl:
+            # allow another attempt on a later poll
+            state.get("pet_tsl_requested", set()).discard(pk)
+            return
         new = make_pet_entities(platform, coordinator, state, pk_catalog,
                                 registry._known[platform])
         if new:
