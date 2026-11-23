@@ -1,0 +1,79 @@
+name: Bug report
+description: Something that should work doesn't (a supported device, login, availability...)
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! The **diagnostics** and a **debug log** are what make most issues fixable, so please attach both.
+
+        🔒 **Before attaching anything**, check for and replace with `xxx`: your email / username, passwords, tokens, `accessKey`, `iotId`, `identityAlias`, `identityId`, `deviceName`, IP and MAC addresses. Recent versions redact most of these automatically, but please check anyway.
+  - type: input
+    id: integration_version
+    attributes:
+      label: AigoSmart integration version
+      description: Shown on the integration card (Settings → Devices & services → AigoSmart). After a HACS update, **restart Home Assistant** before testing.
+      placeholder: "0.9.1"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      description: Settings → About.
+      placeholder: "2026.11.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: install_type
+    attributes:
+      label: Installation type
+      options:
+        - Home Assistant OS
+        - Container (Docker)
+        - Core (Python venv)
+        - Supervised
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device model, productKey and categoryKey
+      description: The productKey / categoryKey are in the device's diagnostics file, under `cloud` (or `devices`). Write "n/a" if it's not device-specific.
+      placeholder: "Fan light, a180PpkuyP6, fanLight"
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: Include the steps to reproduce and the approximate time, so it can be found in the log.
+    validations:
+      required: true
+  - type: textarea
+    id: debug_log
+    attributes:
+      label: Debug log
+      description: |
+        Settings → Devices & services → AigoSmart → ⋮ → **Enable debug logging**, reproduce the problem, then **Disable debug logging**. The browser downloads the log. Drag the file here, or paste the `aigosmart` lines.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        Open the device (Settings → Devices & services → AigoSmart → Devices → your device) → ⋮ → **Download diagnostics**, and drag the `.json` file here. If the problem isn't about one device, use the integration's ⋮ → Download diagnostics instead.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I restarted Home Assistant after the last update of the integration.
+          required: true
+        - label: I removed personal data (email, tokens, iotId, deviceName, IP/MAC) from the attachments.
+          required: true

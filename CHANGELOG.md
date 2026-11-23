@@ -13,6 +13,9 @@
 
 - CI now runs every test file (including `test_aquarium.py`, which was broken) and `ruff check`. The existing lint findings are fixed.
 - The release workflow now files the `[Unreleased]` CHANGELOG section under the new version in the release commit, and detects `BREAKING CHANGE` footers.
+- Bug reports and device-support requests now use GitHub issue forms that ask for the versions, productKey / categoryKey, debug log and diagnostics, with a redaction reminder.
+- README: supported devices are listed by what actually gets entities; the 498-product catalog is described as a catalog, not a support list.
+- `hacs.json` now requires Home Assistant 2024.11.0, the oldest version the integration actually works with (re-authentication / reconfigure flows).
 
 ## [0.9.0] - 2026-11-23
 
