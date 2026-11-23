@@ -178,6 +178,7 @@ python aigo_cli.py bleprovision AA:BB:CC:DD:EE:FF "MyWiFi" "wifipassword"
 | `aigosmart.add_device` | Start the guided Add-Device flow (Bluetooth + WiFi) |
 | `aigosmart.discover_local` | One-shot ALCS multicast discovery sweep |
 | `aigosmart.discover_bluetooth` | Scan BLE for Aigostar pairing devices (needs the `bluetooth` integration) |
+| `aigosmart.set_properties` | Advanced, admin only: write raw TSL properties to a device, e.g. `{"WaterGear": 3}` (for testing devices; names are in the device diagnostics) |
 
 ### Standalone CLI (no Home Assistant required)
 

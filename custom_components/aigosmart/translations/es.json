@@ -69,5 +69,37 @@
       "title": "{name} todavía no es compatible",
       "description": "AigoSmart encontró **{name}** ({product}, categoría `{category}`, productKey `{product_key}`), pero este tipo de dispositivo todavía no es compatible, así que no tiene entidades en Home Assistant.\n\nSelecciona **Más información** para abrir una solicitud de soporte y adjunta los diagnósticos del dispositivo (página del dispositivo → ⋮ → Descargar diagnósticos). Este aviso desaparece solo cuando una versión de la integración sea compatible con el dispositivo o cuando lo quites de tu cuenta AigoSmart."
     }
+  },
+  "services": {
+    "sync_devices": {
+      "name": "Sincronizar dispositivos",
+      "description": "Vuelve a leer la lista de dispositivos de la nube AigoSmart y recarga la integración."
+    },
+    "discover_local": {
+      "name": "Descubrir dispositivos locales",
+      "description": "Busca dispositivos AigoSmart en la red local (multicast ALCS) y los registra en el log."
+    },
+    "add_device": {
+      "name": "Añadir dispositivo",
+      "description": "Inicia el asistente para añadir dispositivos. Busca dispositivos Aigostar en modo de emparejamiento por Bluetooth (si la integración bluetooth de Home Assistant está activa) y por WiFi (los que detectan otros dispositivos ya vinculados en la red)."
+    },
+    "discover_bluetooth": {
+      "name": "Descubrir dispositivos Bluetooth",
+      "description": "Busca dispositivos BLE de Aigostar (servicio de emparejamiento Breeze 0xFEB3) mediante la integración bluetooth de Home Assistant y lanza eventos aigosmart_ble_found."
+    },
+    "set_properties": {
+      "name": "Escribir propiedades (avanzado)",
+      "description": "Avanzado / depuración: escribe propiedades TSL en un dispositivo tal cual, sin pasar por las entidades. La nube rechaza o el dispositivo ignora nombres o valores incorrectos, y un valor equivocado puede encender el dispositivo o cambiar su configuración. Solo administradores. Los nombres y rangos están en los diagnósticos del dispositivo (tsl_model).",
+      "fields": {
+        "device_id": {
+          "name": "Dispositivo",
+          "description": "El dispositivo AigoSmart en el que escribir."
+        },
+        "properties": {
+          "name": "Propiedades",
+          "description": "Identificadores de propiedad y valores, por ejemplo {\"LightMode\": 1}."
+        }
+      }
+    }
   }
 }

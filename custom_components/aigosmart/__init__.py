@@ -146,6 +146,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_DISCOVER_LOCAL, _handle_discover_local)
     hass.services.async_register(DOMAIN, SERVICE_ADD_DEVICE, _handle_add_device)
     hass.services.async_register(DOMAIN, SERVICE_DISCOVER_BLE, _handle_discover_ble)
+    from .set_properties import async_register as async_register_set_properties
+    async_register_set_properties(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -159,8 +161,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         from .unsupported import async_update_unsupported_issues
         async_update_unsupported_issues(hass)
         if not hass.data[DOMAIN]:
+            from .set_properties import SERVICE_SET_PROPERTIES
             for svc in (SERVICE_SYNC, SERVICE_DISCOVER_LOCAL,
-                        SERVICE_ADD_DEVICE, SERVICE_DISCOVER_BLE):
+                        SERVICE_ADD_DEVICE, SERVICE_DISCOVER_BLE,
+                        SERVICE_SET_PROPERTIES):
                 if hass.services.has_service(DOMAIN, svc):
                     hass.services.async_remove(DOMAIN, svc)
             from .local_listener import async_stop_listener

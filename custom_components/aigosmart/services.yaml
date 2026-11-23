@@ -10,6 +10,29 @@ add_device:
     Start the guided Add-Device flow. Discovers Aigostar devices in pairing mode
     via Bluetooth (when the Home Assistant bluetooth integration is active) and
     via WiFi (devices reported by already-bound devices on the LAN).
+set_properties:
+  name: Set raw properties (advanced)
+  description: >
+    Advanced / debugging: write TSL properties to a device exactly as given,
+    bypassing the entities. Admin only. Wrong names or values are rejected by
+    the cloud or ignored by the device, and a wrong value can switch the
+    device or change its settings. Property names and ranges are in the
+    device's diagnostics (tsl_model).
+  fields:
+    device_id:
+      name: Device
+      description: The AigoSmart device to write to.
+      required: true
+      selector:
+        device:
+          integration: aigosmart
+    properties:
+      name: Properties
+      description: 'Property identifiers and values, for example {"LightMode": 1}.'
+      required: true
+      example: '{"WaterGear": 3}'
+      selector:
+        object:
 discover_bluetooth:
   name: Discover Bluetooth devices
   description: >
