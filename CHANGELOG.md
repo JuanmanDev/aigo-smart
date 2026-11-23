@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fan-light speed changes did not move the motor ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)). The BLE Mesh fan-lights ignore a `windspeed` sent together with a redundant `powerstate_2: 1`, and ignore any manual speed while a breeze preset (`mode_2` Natural / Sleep / Fresh) is active. A speed change on a running fan-light now sends only `windspeed`, plus `mode_2: 0` when a preset was active. Starting from off still sends power and speed in one write. Selecting a preset sends only `mode_2` while running. Diagnosis by [@davidpla7](https://github.com/davidpla7). Classic fans (tower fan) are unchanged.
+
+## [0.8.0] - 2026-11-23
+
 ### Added
 
 - Support for Aigostar fan-lights (cloud category `fanLight`, e.g. `a180PpkuyP6` / `a1aeYLqeLsb`) ([#2](https://github.com/JuanmanDev/aigo-smart/issues/2)): a **Fan** entity (on/off, 6 speeds, Normal/Natural/Sleep/Fresh presets, forward/reverse direction) and a separate **Light** entity (on/off, brightness, colour temperature, colour on RGBCCT models). The auto-off timer uses minutes (0-1440) on these models.
