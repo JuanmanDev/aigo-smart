@@ -38,23 +38,12 @@ class TestCatalog(unittest.TestCase):
         dev = {"iotId": "x", "categoryKey": "AirConditioner", "productKey": "whatever"}
         self.assertEqual(discovery.platform_for_device(dev, {}), "climate")
 
-    def test_registry_sync_dedup(self):
+    def test_registry_register(self):
         r = discovery.DeviceRegistry()
         r.register("light")
-        devs = [{"iotId": "a", "categoryKey": "Lamp"},
-                {"iotId": "b", "categoryKey": "RGBLamp"}]
-        new1 = r.sync(devs)
-        new2 = r.sync(devs)
-        self.assertEqual(len(new1.get("light", [])), 2)
-        self.assertEqual(new2.get("light"), None)  # no duplicates second time
-
-    def test_registry_new_device_detected(self):
-        r = discovery.DeviceRegistry()
-        r.register("light")
-        r.sync([{"iotId": "a", "categoryKey": "Lamp"}])
-        new = r.sync([{"iotId": "a", "categoryKey": "Lamp"},
-                     {"iotId": "b", "categoryKey": "CeilingLight"}])
-        self.assertEqual([d["iotId"] for d in new["light"]], ["b"])
+        r._known["light"].add("a")
+        r.register("light")  # idempotent: keeps what is known
+        self.assertEqual(r._known["light"], {"a"})
 
 
 if __name__ == "__main__":

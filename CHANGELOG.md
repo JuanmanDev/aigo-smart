@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Removed
+
+- The unused `DeviceRegistry.sync()` (internal; entity creation never called it).
+
 ## [0.9.1] - 2026-11-23
 
 ### Fixed
