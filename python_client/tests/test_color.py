@@ -1,18 +1,30 @@
 """Tests for the colour model (adapted from hass-aigosmart's engine)."""
+import importlib.util
 import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "custom_components", "aigosmart"))
 
-from color_model import (  # noqa: E402
-    ENCODING_HSV,
-    ColorSpec,
-    ModeSpec,
-    as_struct,
-    color_spec_from_props,
-    color_spec_from_tsl,
-)
+# Load the module by path: putting custom_components/aigosmart on sys.path
+# would let the integration's select.py shadow the stdlib "select" module
+# (which asyncio imports) for every test that runs afterwards.
+def _load(name):
+    path = os.path.join(os.path.dirname(__file__), "..", "..",
+                        "custom_components", "aigosmart", f"{name}.py")
+    spec = importlib.util.spec_from_file_location(f"_aigosmart_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses look the module up here
+    spec.loader.exec_module(module)
+    return module
+
+
+_color_model = _load("color_model")
+ENCODING_HSV = _color_model.ENCODING_HSV
+ColorSpec = _color_model.ColorSpec
+ModeSpec = _color_model.ModeSpec
+as_struct = _color_model.as_struct
+color_spec_from_props = _color_model.color_spec_from_props
+color_spec_from_tsl = _color_model.color_spec_from_tsl
 
 
 class TestColorModel(unittest.TestCase):
