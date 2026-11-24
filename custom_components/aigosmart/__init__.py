@@ -61,6 +61,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Login failed: {exc}") from exc
 
     coordinator = AigoDataUpdateCoordinator(hass, client, entry)
+    # imported here so the unit tests' Home Assistant stubs need no storage
+    from homeassistant.helpers.storage import Store
+    await coordinator.async_load_assumed(
+        Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.assumed_state"))
     try:
         await coordinator.async_config_entry_first_refresh()
     except Exception as exc:
@@ -173,7 +177,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Integration entry deleted: remove its unsupported-device repair issues."""
+    """Integration entry deleted: remove its repair issues and stored state."""
+    from homeassistant.helpers.storage import Store
+    await Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.assumed_state").async_remove()
     from .unsupported import (
         async_delete_all_unsupported_issues,
         async_update_unsupported_issues,

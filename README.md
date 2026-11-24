@@ -69,7 +69,9 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
 - **Pet water fountains** (`petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza
   S40101N34) — pump on/off, mode (continuous / intermittent), flow
   (low / medium / high), water level, days until filter change and cleaning,
-  reset buttons for both
+  reset buttons for both. Some fountains apply changes but never report them
+  back, so the AigoSmart app keeps showing the old settings; Home Assistant
+  shows what it last set until the fountain reports a new value
 - **Pet feeders** (`petFeeder`, e.g. `a1xEttfYqF2`) — **Feed** button with a
   portions setting, last feeding, portions fed today, feeding schedule
   (read-only), indicator light, slow-feed and voice switches, battery

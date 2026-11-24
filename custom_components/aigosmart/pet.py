@@ -188,9 +188,12 @@ class PetEntity(CoordinatorEntity):
         )
         self._available = coordinator.is_device_online(self._iot_id)
         self._commander = get_commander(state, self._iot_id) if state else None
-        if self._commander is not None and is_pet_fountain_device(dev):
-            # the fountain ignores HA's writes in some setups (#4): keep every
-            # write to a single property, like the fan / colour fixes
+        # The fountain applies HA's writes but never reports the new value
+        # back: the cloud shadow (and so the app) keeps the old one (#4).
+        # Keep showing what was written until the shadow really changes.
+        self._remember_writes = is_pet_fountain_device(dev)
+        if self._commander is not None and self._remember_writes:
+            # one property per write, like the fan / colour fixes
             self._commander.one_per_write = True
         self._apply(props)
 
@@ -231,6 +234,8 @@ class PetEntity(CoordinatorEntity):
 
     async def _async_write(self, value: int) -> None:
         items = {self._prop: int(value)}
+        if self._remember_writes:
+            self._coordinator.remember_write(self._iot_id, items)
         self._coordinator.async_set_optimistic_props(
             self._iot_id, items, hold_duration=5.0)
         self._apply(self._coordinator.props.get(self._iot_id, {}))

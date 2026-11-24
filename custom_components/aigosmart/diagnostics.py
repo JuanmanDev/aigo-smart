@@ -194,6 +194,10 @@ async def async_get_device_diagnostics(
         "cloud": dev_data,
         "cloud_status_label": _status_label(status),
         "properties": props,
+        # values HA wrote that the device never reported back (shown in
+        # "properties" instead of the frozen cloud shadow)
+        "assumed_properties": (
+            coordinator.assumed_props(iot_id) if coordinator and iot_id else {}),
         "tsl_model": tsl,
         "local_control": {
             "alcs_access_info": alcs_keys or "not_available",
