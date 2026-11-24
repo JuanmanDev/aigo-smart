@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Pet alerts as on/off sensors** (#4), so automations can use a plain "turns on" trigger instead of matching codes or numbers. Fountain: **Water low** (the fountain's own low-water flag or error 236), **Filter change due** and **Cleaning due** (0 days left). Feeder: **Food low**, **Food jammed**, **Battery low**, **Feeding** (dispensing now) and **Mains power**.
+- **Editable feeding schedule.** Each meal of the feeder's schedule gets a **Meal N** switch (on/off), a **Meal N time** and **Meal N portions**. A change rewrites only that meal and keeps the others as they are. The new **Set feeding schedule** action (`aigosmart.set_feeding_plan`) replaces the whole schedule, to add or remove meals (each meal runs every day).
+- **Feeding event.** A **Feeding** event entity fires once for each new feed the feeder records, as `scheduled` when it matches an enabled meal's time (within 3 minutes) or `manual` otherwise, with the portions and time. Feeds recorded while Home Assistant was off are not replayed.
+- The fountain's filter and cleaning intervals can be changed (0–90 days), like in the app.
+
+### Changed
+
+- The fountain's **Filter change interval** and **Cleaning interval** are now number entities instead of read-only sensors; the old sensor entities are removed automatically.
+
 ## [0.10.2] - 2026-11-24
 
 ### Changed

@@ -3,7 +3,9 @@ import importlib.util
 import os
 import sys
 import unittest
+import unittest.mock
 from datetime import datetime, timezone
+from datetime import time as dtime
 from unittest.mock import AsyncMock, MagicMock
 
 sys.modules["voluptuous"] = MagicMock()
@@ -14,8 +16,10 @@ for _mod in (
     "homeassistant.config_entries", "homeassistant.core", "homeassistant.helpers",
     "homeassistant.helpers.device_registry", "homeassistant.helpers.entity_platform",
     "homeassistant.helpers.update_coordinator", "homeassistant.const",
+    "homeassistant.helpers.service", "homeassistant.helpers.config_validation",
     "homeassistant.exceptions", "homeassistant.components",
-    "homeassistant.components.button",
+    "homeassistant.components.button", "homeassistant.components.binary_sensor",
+    "homeassistant.components.event", "homeassistant.components.time",
     "homeassistant.components.number", "homeassistant.components.select",
     "homeassistant.components.sensor", "homeassistant.components.switch",
     "homeassistant.util", "homeassistant.util.dt",
@@ -36,8 +40,17 @@ class MockCoordinatorEntity:
         self.coordinator = coordinator
 
 
+class _EventEntity(_Entity):
+    """Stand-in for homeassistant.components.event.EventEntity."""
+
+    def _trigger_event(self, event_type, event_attributes=None):
+        self.__dict__.setdefault("fired", []).append((event_type, event_attributes))
+
+
+sys.modules["homeassistant.components.event"].EventEntity = _EventEntity
 for _mod, _cls in (("number", "NumberEntity"), ("select", "SelectEntity"),
-                   ("sensor", "SensorEntity"), ("switch", "SwitchEntity")):
+                   ("sensor", "SensorEntity"), ("switch", "SwitchEntity"),
+                   ("binary_sensor", "BinarySensorEntity"), ("time", "TimeEntity")):
     setattr(sys.modules[f"homeassistant.components.{_mod}"], _cls,
             type(_cls, (_Entity,), {}))
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
@@ -58,9 +71,27 @@ class _RestoreNumber(_Entity):
 sys.modules["homeassistant.components.number"].RestoreNumber = _RestoreNumber
 sys.modules["homeassistant.components.button"].ButtonEntity = type("ButtonEntity", (_Entity,), {})
 sys.modules["homeassistant.core"].callback = lambda func: func
+
+
+class Invalid(Exception):
+    pass
+
+
+class ServiceValidationError(Exception):
+    pass
+
+
+class HomeAssistantError(Exception):
+    pass
+
+
+sys.modules["voluptuous"].Invalid = Invalid
+sys.modules["homeassistant.exceptions"].ServiceValidationError = ServiceValidationError
+sys.modules["homeassistant.exceptions"].HomeAssistantError = HomeAssistantError
 # "today" in Europe/Lisbon (UTC+0 in November) on the day of the report
 _DT = sys.modules["homeassistant.util.dt"]
 _DT.start_of_local_day = lambda: datetime(2026, 11, 23, tzinfo=timezone.utc)
+_DT.as_local = lambda when: when
 sys.modules["homeassistant.util"].dt = _DT
 
 _BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",
@@ -80,6 +111,8 @@ def _load(name):
 helpers = _load("helpers")
 discovery = _load("discovery")
 pet = _load("pet")
+set_properties = _load("set_properties")
+feeding_plan = _load("feeding_plan")
 
 # Data from the reporter's diagnostics in #4 (identifiers removed)
 FOUNTAIN = {"iotId": "fountain", "productKey": "a163VQp0e0e", "netType": "NET_WIFI",
@@ -181,13 +214,23 @@ class TestEntityCreation(_PetBase):
         names = lambda plat, iid: sorted(e._attr_name for e in self.make(plat) if e._iot_id == iid)  # noqa: E731
         self.assertEqual(names("switch", "fountain"), ["Pump"])
         self.assertEqual(names("select", "fountain"), ["Flow", "Mode"])
-        self.assertEqual(len(names("sensor", "fountain")), 7)
-        self.assertEqual(names("switch", "feeder"), ["Indicator light", "Slow feed", "Voice on feed"])
+        self.assertEqual(len(names("sensor", "fountain")), 5)
+        self.assertEqual(names("number", "fountain"), ["Cleaning interval", "Filter change interval"])
+        self.assertEqual(names("binary_sensor", "fountain"),
+                         ["Cleaning due", "Filter change due", "Water low"])
+        self.assertEqual(names("binary_sensor", "feeder"),
+                         ["Battery low", "Feeding", "Food jammed", "Food low", "Mains power"])
+        self.assertEqual(names("event", "feeder"), ["Feeding"])
+        self.assertEqual(names("switch", "feeder")[:2], ["Indicator light", "Meal 1"])
+        self.assertEqual(names("time", "feeder"), [f"Meal {i} time" for i in range(1, 5)])
+        self.assertEqual(names("switch", "feeder"),
+                         ["Indicator light", "Meal 1", "Meal 2", "Meal 3", "Meal 4",
+                          "Slow feed", "Voice on feed"])
         self.assertEqual(names("select", "feeder"), [])
         self.assertEqual(len(names("sensor", "feeder")), 8)
         # without the TSL: no manual feed and no reset buttons
         self.assertEqual(self.make("button"), [])
-        self.assertEqual(self.make("number"), [])
+        self.assertEqual(names("number", "feeder"), [f"Meal {i} portions" for i in range(1, 5)])
 
     def test_no_duplicates(self):
         known: set = set()
@@ -205,7 +248,8 @@ class TestEntityCreation(_PetBase):
         self.assertEqual(self.make("switch"), [])
 
     def test_unique_ids_distinct(self):
-        ids = [e._attr_unique_id for plat in ("switch", "select", "sensor")
+        ids = [e._attr_unique_id for plat in ("switch", "select", "sensor", "number",
+                                               "time", "binary_sensor", "event")
                for e in self.make(plat)]
         self.assertEqual(len(ids), len(set(ids)))
 
@@ -322,7 +366,7 @@ class TestWithTsl(_PetBase):
         self.coordinator.tsl_models = {"a1xEttfYqF2": FEEDER_TSL, "a163VQp0e0e": FOUNTAIN_TSL}
 
     def test_feed_entities_created_from_tsl(self):
-        self.assertEqual([e._attr_name for e in self.make("number")], ["Feed portions"])
+        self.assertIn("Feed portions", [e._attr_name for e in self.make("number")])
         buttons = sorted(e._attr_name for e in self.make("button"))
         self.assertEqual(buttons, ["Feed", "Reset cleaning", "Reset filter"])
 
@@ -336,7 +380,8 @@ class TestWithTsl(_PetBase):
 
     async def test_feed_button_sends_portions(self):
         state = self._state()
-        number = next(e for e in pet.make_pet_entities("number", self.coordinator, state, {}, set()))
+        number = next(e for e in pet.make_pet_entities("number", self.coordinator, state, {}, set())
+                      if e._attr_name == "Feed portions")
         button = next(e for e in pet.make_pet_entities("button", self.coordinator, state, {}, set())
                       if e._attr_name == "Feed")
         self.with_commander(number)
@@ -349,7 +394,8 @@ class TestWithTsl(_PetBase):
 
     async def test_feed_portions_restored_and_clamped_without_writing(self):
         state = self._state()
-        number = next(iter(pet.make_pet_entities("number", self.coordinator, state, {}, set())))
+        number = next(e for e in pet.make_pet_entities("number", self.coordinator, state, {}, set())
+                      if e._attr_name == "Feed portions")
         self.with_commander(number)
         number._last_number_data = MagicMock(native_value=40)
         await number.async_added_to_hass()
@@ -402,6 +448,198 @@ class TestFountainOnePropertyPerWrite(unittest.TestCase):
         self.assertTrue(state["commanders"]["fountain"].one_per_write)
         pet.FeederLight(coordinator, FEEDER, state)
         self.assertFalse(state["commanders"]["feeder"].one_per_write)
+
+
+PLAN = FEEDER_PROPS["feedingPlan"]
+
+
+class TestPlanEditing(unittest.TestCase):
+    def test_edit_one_meal_keeps_the_others(self):
+        self.assertEqual(pet.edit_feeding_plan(PLAN, 1, enabled=False),
+                         "7F00000201,7F06000400,7F0C000201,7F12000301")
+        self.assertEqual(pet.edit_feeding_plan(PLAN, 3, hour=19, minute=30, portions=1),
+                         "7F00000201,7F06000401,7F0C000201,7F131E0101")
+
+    def test_weekday_mask_and_unknown_items_are_kept(self):
+        raw = "15080003 01,2A0A1E0201"   # the first item is not a valid meal
+        self.assertEqual(pet.edit_feeding_plan(raw, 0, portions=4),
+                         "15080003 01,2A0A1E0401")
+
+    def test_missing_meal(self):
+        self.assertIsNone(pet.edit_feeding_plan(PLAN, 4, enabled=False))
+        self.assertIsNone(pet.edit_feeding_plan(None, 0, enabled=False))
+
+    def test_build_sorted_every_day(self):
+        meals = [{"time": dtime(18, 0), "portions": 3},
+                 {"time": dtime(6, 5), "portions": 12, "enabled": False}]
+        self.assertEqual(pet.build_feeding_plan(meals), "7F06050C00,7F12000301")
+        self.assertEqual([s["time"] for s in pet.parse_feeding_plan(
+            pet.build_feeding_plan(meals))], ["06:05", "18:00"])
+
+    def test_classify_feeding(self):
+        slots = pet.parse_feeding_plan(PLAN)
+
+        def at(h, m):
+            return datetime(2026, 11, 23, h, m, tzinfo=timezone.utc)
+
+        self.assertEqual(pet.classify_feeding(at(12, 0), slots), "scheduled")
+        self.assertEqual(pet.classify_feeding(at(23, 58), slots), "scheduled")  # 00:00 meal
+        self.assertEqual(pet.classify_feeding(at(15, 36), slots), "manual")
+        slots[2]["enabled"] = False
+        self.assertEqual(pet.classify_feeding(at(12, 0), slots), "manual")
+
+
+class TestAlerts(_PetBase):
+    def test_all_clear(self):
+        for iot_id, name in (("fountain", "Water low"), ("fountain", "Filter change due"),
+                             ("fountain", "Cleaning due"), ("feeder", "Food low"),
+                             ("feeder", "Food jammed"), ("feeder", "Battery low"),
+                             ("feeder", "Feeding")):
+            self.assertFalse(self.by_name("binary_sensor", iot_id, name).is_on, name)
+        self.assertTrue(self.by_name("binary_sensor", "feeder", "Mains power").is_on)
+
+    def test_problems(self):
+        self.coordinator.props["fountain"].update(WaterStatus=0, errorCode=236,
+                                                  FilterRemainderDay=0)
+        self.assertTrue(self.by_name("binary_sensor", "fountain", "Water low").is_on)
+        self.assertTrue(self.by_name("binary_sensor", "fountain", "Filter change due").is_on)
+        self.coordinator.props["fountain"].update(WaterStatus=1, errorCode=0)
+        self.assertTrue(self.by_name("binary_sensor", "fountain", "Water low").is_on)
+        self.coordinator.props["feeder"].update(errorCode=244, feedState=1, batteryState=1)
+        self.assertTrue(self.by_name("binary_sensor", "feeder", "Food low").is_on)
+        self.assertFalse(self.by_name("binary_sensor", "feeder", "Food jammed").is_on)
+        self.assertTrue(self.by_name("binary_sensor", "feeder", "Feeding").is_on)
+        self.assertFalse(self.by_name("binary_sensor", "feeder", "Mains power").is_on)
+
+    def test_unknown_until_seen(self):
+        self.coordinator.props["feeder"] = {"errorCode": "?"}
+        self.assertIsNone(self.by_name("binary_sensor", "feeder", "Food low").is_on)
+
+
+class TestMeals(_PetBase):
+    async def test_switch_disables_one_meal(self):
+        meal = self.with_commander(self.by_name("switch", "feeder", "Meal 2"))
+        self.assertTrue(meal.is_on)
+        self.assertEqual(meal.extra_state_attributes["time"], "06:00")
+        await meal.async_turn_off()
+        meal._commander.async_send.assert_awaited_with(
+            {"feedingPlan": "7F00000201,7F06000400,7F0C000201,7F12000301"})
+        self.assertFalse(meal.is_on)                     # optimistic
+        self.coordinator.remember_write.assert_not_called()
+
+    async def test_time_and_portions(self):
+        meal_time = self.with_commander(self.by_name("time", "feeder", "Meal 4 time"))
+        self.assertEqual(meal_time.native_value, dtime(18, 0))
+        await meal_time.async_set_value(dtime(19, 15))
+        meal_time._commander.async_send.assert_awaited_with(
+            {"feedingPlan": "7F00000201,7F06000401,7F0C000201,7F130F0301"})
+        portions = self.with_commander(self.by_name("number", "feeder", "Meal 1 portions"))
+        self.assertEqual(portions.native_value, 2)
+        await portions.async_set_native_value(5)
+        sent = portions._commander.async_send.await_args.args[0]["feedingPlan"]
+        self.assertTrue(sent.startswith("7F00000501,"))
+
+    def test_removed_meal_is_unavailable(self):
+        meal = self.by_name("switch", "feeder", "Meal 4")
+        self.coordinator.last_update_success = True
+        self.coordinator.props["feeder"]["feedingPlan"] = "7F00000201"
+        meal._handle_coordinator_update()
+        self.assertFalse(meal.available)
+
+    def test_new_meals_get_entities(self):
+        known: set = set()
+        self.make("switch", known)
+        self.coordinator.props["feeder"]["feedingPlan"] = PLAN + ",7F15000101"
+        self.assertEqual([e._attr_name for e in self.make("switch", known)], ["Meal 5"])
+
+    def test_read_only_plan_in_tsl_means_no_meal_entities(self):
+        self.coordinator.tsl_models = {"a1xEttfYqF2": {"properties": [
+            _prop("feedingPlan", "r", "text", {})]}}
+        self.assertEqual(self.make("time"), [])
+
+
+class TestIntervals(_PetBase):
+    async def test_interval_write_is_remembered(self):
+        number = self.with_commander(self.by_name("number", "fountain", "Filter change interval"))
+        self.assertEqual(number.native_value, 31)
+        self.assertEqual((number._attr_native_min_value, number._attr_native_max_value), (0, 90))
+        await number.async_set_native_value(45)
+        number._commander.async_send.assert_awaited_with({"FilterReplaceTime": 45})
+        self.coordinator.remember_write.assert_called_with("fountain", {"FilterReplaceTime": 45})
+
+    def test_retired_sensors_removed(self):
+        registry = MagicMock()
+
+        def entity_id(domain, platform, uid):
+            return f"sensor.{uid}" if uid.endswith("FilterReplaceTime") else None
+
+        registry.async_get_entity_id.side_effect = entity_id
+        er = MagicMock()
+        er.async_get.return_value = registry
+        sys.modules["homeassistant.helpers"].entity_registry = er
+        pet.remove_retired_entities(MagicMock(), MagicMock(), self.coordinator)
+        removed = sorted(c.args[0] for c in registry.async_remove.call_args_list)
+        self.assertEqual(removed, ["sensor.feeder_pet_FilterReplaceTime",
+                                   "sensor.fountain_pet_FilterReplaceTime"])
+
+
+class TestFeedEvent(_PetBase):
+    def test_history_never_fires_new_feeds_do(self):
+        event = self.by_name("event", "feeder", "Feeding")
+        self.coordinator.last_update_success = True
+        event._handle_coordinator_update()
+        self.assertEqual(event.__dict__.get("fired", []), [])
+        # the 18:00 meal (3 portions), then a manual feed of 2 at 18:20
+        noon = 1795435202                                  # 2026-11-23 12:00:02 UTC
+        new = f"{noon + 6 * 3600 + 1200},2:{noon + 6 * 3600 + 1},3:" + FEED_RECORD
+        self.coordinator.props["feeder"]["feedRecord"] = new
+        event._handle_coordinator_update()
+        self.assertEqual([(t, a["portions"]) for t, a in event.fired],
+                         [("scheduled", 3), ("manual", 2)])
+        event._handle_coordinator_update()                 # same data: nothing new
+        self.assertEqual(len(event.fired), 2)
+
+
+class TestSetFeedingPlanAction(_PetBase):
+    def _call(self, meals):
+        self.client = MagicMock()
+        self.coordinator.async_refresh_device = AsyncMock()
+        state = {"coordinator": self.coordinator, "client": self.client, "pk_catalog": {}}
+        hass = MagicMock()
+
+        async def run_job(func, *args):
+            return func(*args)
+
+        hass.async_add_executor_job = run_job
+        call = MagicMock()
+        call.data = {"device_id": "dev", "meals": [
+            {"time": dtime(*m[0]), "portions": m[1], "enabled": m[2]} for m in meals]}
+        return hass, call, state
+
+    async def test_writes_whole_plan(self):
+        hass, call, state = self._call([((19, 0), 3, True), ((7, 30), 2, False)])
+        with unittest.mock.patch.object(feeding_plan, "resolve_device",
+                                        return_value=("feeder", state, "Feeder")):
+            await feeding_plan.async_handle_set_feeding_plan(hass, call)
+        self.client.set_properties.assert_called_once_with(
+            "feeder", {"feedingPlan": "7F071E0200,7F13000301"})
+
+    async def test_rejects_non_feeder_and_bad_portions(self):
+        self.coordinator.tsl_models = {"a1xEttfYqF2": FEEDER_TSL}
+        hass, call, state = self._call([((7, 0), 30, True)])
+        with unittest.mock.patch.object(feeding_plan, "resolve_device",
+                                        return_value=("feeder", state, "Feeder")):
+            with self.assertRaises(ServiceValidationError):
+                await feeding_plan.async_handle_set_feeding_plan(hass, call)
+        with unittest.mock.patch.object(feeding_plan, "resolve_device",
+                                        return_value=("fountain", state, "Fountain")):
+            with self.assertRaises(ServiceValidationError):
+                await feeding_plan.async_handle_set_feeding_plan(hass, call)
+        self.client.set_properties.assert_not_called()
+
+    def test_duplicate_times_rejected(self):
+        with self.assertRaises(Invalid):
+            feeding_plan._unique_times([{"time": dtime(7, 0)}, {"time": dtime(7, 0)}])
 
 
 if __name__ == "__main__":
