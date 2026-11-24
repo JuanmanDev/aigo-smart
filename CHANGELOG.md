@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-11-24
+
 ### Added
 
 - **Pet alerts as on/off sensors** (#4), so automations can use a plain "turns on" trigger instead of matching codes or numbers. Fountain: **Water low** (the fountain's own low-water flag or error 236), **Filter change due** and **Cleaning due** (0 days left). Feeder: **Food low**, **Food jammed**, **Battery low**, **Feeding** (dispensing now) and **Mains power**.
