@@ -241,6 +241,16 @@ class TestWrites(_PetBase):
         pump._commander.async_send.assert_awaited_with({"Switch": 0})
         self.assertFalse(pump.is_on)
 
+    async def test_fountain_writes_are_remembered(self):
+        flow = self.with_commander(self.by_name("select", "fountain", "Flow"))
+        await flow.async_select_option("High")
+        self.coordinator.remember_write.assert_called_with("fountain", {"WaterGear": 3})
+
+    async def test_feeder_writes_are_not_remembered(self):
+        light = self.with_commander(self.by_name("switch", "feeder", "Indicator light"))
+        await light.async_turn_off()
+        self.coordinator.remember_write.assert_not_called()
+
     async def test_flow_and_mode(self):
         flow = self.with_commander(self.by_name("select", "fountain", "Flow"))
         await flow.async_select_option("High")

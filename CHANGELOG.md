@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Pet water fountain: Home Assistant jumped back to the old pump / mode / flow values a few seconds after a change, although the fountain itself had switched ([#4](https://github.com/JuanmanDev/aigo-smart/issues/4)). The fountain applies cloud writes but never reports the new value back, so the cloud shadow (which Home Assistant and the AigoSmart app both read) stays frozen at the old values. Home Assistant now keeps showing the value it wrote for as long as the shadow still holds the value it had before; as soon as the shadow really changes (the fountain reports, or the value is changed in the app or on the device), that value wins again. The written values survive a restart and are listed as `assumed_properties` in the device diagnostics. Only pet fountains are affected. Thanks to [@emanuelrg123](https://github.com/emanuelrg123) for the test with the app closed and the debug log.
+
 ## [0.10.0] - 2026-11-23
 
 ### Requirements

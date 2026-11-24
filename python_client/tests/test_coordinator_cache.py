@@ -114,5 +114,97 @@ class TestCoordinatorOptimisticLock(unittest.TestCase):
         self.assertEqual(merged["Brightness"], 50)
 
 
+class TestAssumedState(unittest.TestCase):
+    """Devices that apply writes but never report them back (#4)."""
+
+    def setUp(self):
+        self.c = AigoDataUpdateCoordinator(MagicMock(), MagicMock())
+        self.c.data = {"devices": [], "props": {}}
+        self.iot = "fountain"
+        # shadow frozen at the old values
+        self.shadow = {"Switch": 1, "mode": 1, "WaterGear": 1}
+        self.c._merge_props(self.iot, dict(self.shadow))
+
+    def poll(self, shadow=None):
+        merged = self.c._merge_props(self.iot, dict(shadow or self.shadow))
+        self.c.data["props"][self.iot] = merged
+        return merged
+
+    def test_written_value_survives_frozen_shadow(self):
+        self.c.remember_write(self.iot, {"WaterGear": 3})
+        self.c.remember_write(self.iot, {"mode": 0})
+        merged = self.poll()
+        self.assertEqual(merged["WaterGear"], 3)
+        self.assertEqual(merged["mode"], 0)
+        self.assertEqual(merged["Switch"], 1)
+        self.assertEqual(self.c.assumed_props(self.iot), {"WaterGear": 3, "mode": 0})
+
+    def test_real_report_wins(self):
+        self.c.remember_write(self.iot, {"WaterGear": 3})
+        merged = self.poll({**self.shadow, "WaterGear": 2})   # changed in the app
+        self.assertEqual(merged["WaterGear"], 2)
+        self.assertEqual(self.c.assumed_props(self.iot), {})
+        # later polls keep the real value
+        self.assertEqual(self.poll({**self.shadow, "WaterGear": 2})["WaterGear"], 2)
+
+    def test_device_confirms_write(self):
+        self.c.remember_write(self.iot, {"WaterGear": 3})
+        self.assertEqual(self.poll({**self.shadow, "WaterGear": 3})["WaterGear"], 3)
+        self.assertEqual(self.c.assumed_props(self.iot), {})
+
+    def test_writing_back_the_shadow_value_drops_assumption(self):
+        self.c.remember_write(self.iot, {"Switch": 0})
+        self.c.remember_write(self.iot, {"Switch": 1})
+        self.assertEqual(self.c.assumed_props(self.iot), {})
+        self.assertEqual(self.poll()["Switch"], 1)
+
+    def test_baseline_is_kept_across_writes(self):
+        self.c.remember_write(self.iot, {"WaterGear": 3})
+        self.poll()
+        self.c.remember_write(self.iot, {"WaterGear": 2})
+        self.assertEqual(self.poll()["WaterGear"], 2)
+        self.assertEqual(self.c._assumed[self.iot]["WaterGear"], [2, 1])
+
+    def test_persisted_and_restored(self):
+        store = MagicMock()
+        saved = {}
+
+        def _delay_save(fn, delay):
+            saved.update(fn())
+
+        store.async_delay_save.side_effect = _delay_save
+
+        async def _load():
+            return None
+
+        store.async_load.side_effect = _load
+        import asyncio
+        asyncio.run(self.c.async_load_assumed(store))
+        self.c.remember_write(self.iot, {"mode": 0})
+        self.assertEqual(saved, {self.iot: {"mode": [0, 1]}})
+
+        other = AigoDataUpdateCoordinator(MagicMock(), MagicMock())
+        other.data = {"devices": [], "props": {}}
+
+        async def _load_saved():
+            return saved
+
+        store2 = MagicMock()
+        store2.async_load.side_effect = _load_saved
+        asyncio.run(other.async_load_assumed(store2))
+        self.assertEqual(other._merge_props(self.iot, dict(self.shadow))["mode"], 0)
+
+    def test_corrupt_store_is_ignored(self):
+        store = MagicMock()
+
+        async def _load():
+            raise ValueError("bad json")
+
+        store.async_load.side_effect = _load
+        import asyncio
+        asyncio.run(self.c.async_load_assumed(store))
+        self.assertEqual(self.c.assumed_props(self.iot), {})
+
+
 if __name__ == "__main__":
     unittest.main()

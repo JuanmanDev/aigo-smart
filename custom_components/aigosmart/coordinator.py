@@ -89,6 +89,15 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         self._prop_fail_count: dict[str, int] = {}
         # iotId -> consecutive /thing/status/get failure count
         self._status_fail_count: dict[str, int] = {}
+        # Devices whose firmware applies cloud writes but never reports the
+        # new value back (the shadow stays frozen, #4): what HA last wrote is
+        # the best known state.  iotId -> {prop: [written, stale_shadow]};
+        # kept until the shadow moves away from the stale value it had.
+        self._assumed: dict[str, dict[str, list]] = {}
+        # iotId -> last raw cloud shadow (without optimistic/assumed values)
+        self._raw_props: dict[str, dict[str, Any]] = {}
+        # optional persistence (homeassistant.helpers.storage.Store)
+        self._assumed_store = None
 
     @property
     def devices(self) -> list[dict]:
@@ -176,6 +185,68 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
             props[k] = v
             locks[k] = (v, hold_until)
 
+    # ------------------------------------------------------------------
+    # Assumed state (devices that never report written values back)
+    # ------------------------------------------------------------------
+
+    async def async_load_assumed(self, store) -> None:
+        """Attach a Store and restore assumed values saved before a restart."""
+        self._assumed_store = store
+        try:
+            data = await store.async_load()
+        except Exception as exc:  # corrupt file must not block setup
+            _LOGGER.debug("AigoSmart: could not load assumed state: %s", exc)
+            data = None
+        if isinstance(data, dict):
+            self._assumed = {
+                iot_id: {k: list(v) for k, v in props.items()
+                         if isinstance(v, (list, tuple)) and len(v) == 2}
+                for iot_id, props in data.items() if isinstance(props, dict)}
+
+    def _save_assumed(self) -> None:
+        if self._assumed_store is not None:
+            self._assumed_store.async_delay_save(
+                lambda: {k: v for k, v in self._assumed.items() if v}, 5)
+
+    def remember_write(self, iot_id: str, items: dict[str, Any]) -> None:
+        """Keep showing ``items`` while the shadow still has its old values."""
+        raw = self._raw_props.get(iot_id, {})
+        assumed = self._assumed.setdefault(iot_id, {})
+        for prop, value in items.items():
+            stale = assumed[prop][1] if prop in assumed else raw.get(prop)
+            if stale is None or str(stale) == str(value):
+                # unknown baseline, or back to what the shadow says anyway
+                assumed.pop(prop, None)
+            else:
+                assumed[prop] = [value, stale]
+        self._save_assumed()
+
+    def assumed_props(self, iot_id: str) -> dict[str, Any]:
+        """Written values currently shown instead of the frozen shadow."""
+        return {k: v[0] for k, v in self._assumed.get(iot_id, {}).items()}
+
+    def _apply_assumed(self, iot_id: str, cloud_props: dict[str, Any],
+                       merged: dict[str, Any]) -> None:
+        assumed = self._assumed.get(iot_id)
+        if not assumed:
+            return
+        changed = False
+        for prop, (value, stale) in list(assumed.items()):
+            if prop not in cloud_props:
+                merged[prop] = value
+            elif str(cloud_props[prop]) == str(stale):
+                merged[prop] = value            # shadow still frozen
+            else:
+                # the shadow moved (device report, app, button on the
+                # device): that is real state again
+                _LOGGER.debug("AigoSmart %s: shadow now reports %s=%s, "
+                              "dropping assumed %s", iot_id, prop,
+                              cloud_props[prop], value)
+                assumed.pop(prop)
+                changed = True
+        if changed:
+            self._save_assumed()
+
     def clear_optimistic_props(self, iot_id: str) -> None:
         """Drop all optimistic holds so the next poll restores real state."""
         self._optimistic_locks.pop(iot_id, None)
@@ -185,6 +256,9 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         now = time.time()
         merged = dict(self.data.get("props", {}).get(iot_id, {}))
         merged.update(cloud_props)
+        if cloud_props:
+            self._raw_props[iot_id] = dict(cloud_props)
+        self._apply_assumed(iot_id, cloud_props, merged)
 
         locks = self._optimistic_locks.get(iot_id, {})
         if not locks:
