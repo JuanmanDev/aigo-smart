@@ -111,6 +111,20 @@
           "description": "Property identifiers and values as a mapping, for example LightMode: 1."
         }
       }
+    },
+    "set_feeding_plan": {
+      "name": "Set feeding schedule",
+      "description": "Replace a pet feeder's whole feeding schedule (adds or removes meals, like the app). Each meal runs every day. To change one existing meal, use its Meal entities instead.",
+      "fields": {
+        "device_id": {
+          "name": "Feeder",
+          "description": "The AigoSmart pet feeder."
+        },
+        "meals": {
+          "name": "Meals",
+          "description": "List of meals: time (HH:MM), portions, and optionally enabled (default true)."
+        }
+      }
     }
   }
 }

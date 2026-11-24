@@ -72,12 +72,18 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
 - **Pet water fountains** (`petWaterFountain`, e.g. `a163VQp0e0e` / Nobleza
   S40101N34) — pump on/off, mode (continuous / intermittent), flow
   (low / medium / high), water level, days until filter change and cleaning,
-  reset buttons for both. Some fountains apply changes but never report them
-  back, so the AigoSmart app keeps showing the old settings; Home Assistant
-  shows what it last set until the fountain reports a new value
+  reset buttons for both, editable filter / cleaning intervals, and on/off
+  alerts **Water low**, **Filter change due** and **Cleaning due**. Some
+  fountains apply changes but never report them back, so the AigoSmart app
+  keeps showing the old settings; Home Assistant shows what it last set until
+  the fountain reports a new value
 - **Pet feeders** (`petFeeder`, e.g. `a1xEttfYqF2`) — **Feed** button with a
-  portions setting, last feeding, portions fed today, feeding schedule
-  (read-only), indicator light, slow-feed and voice switches, battery
+  portions setting, last feeding, portions fed today, an editable feeding
+  schedule (per meal: on/off switch, time and portions; the
+  `aigosmart.set_feeding_plan` action adds or removes meals), a **Feeding**
+  event for every feed (`scheduled` or `manual`), on/off alerts **Food low**,
+  **Food jammed**, **Battery low**, **Feeding** and **Mains power**,
+  indicator light, slow-feed and voice switches, battery
 - **Smart Aquariums** — full controls (power, RGB lighting color wheel & 12 scenes, 3-speed water pump selector, buzzer, child lock, feeding protection/reminder) and sensors (temperature, feeding state, error telemetry)
 - **Repairs** — devices that aren't supported yet show up under
   Settings → System → Repairs with a link to request support
@@ -281,8 +287,8 @@ model-specific properties.
 | Sockets / plugs / switches (`PowerSwitch`, `Switch`, `LightSwitch`) | switch |
 | Smart aquarium `a191KWgv5BZ` | light, switches, pump speed, scenes, sensors |
 | Air fryer `a1MqVKrp9JA` | cooking switch, program, temperature/times, sensors |
-| Pet water fountain `a163VQp0e0e` | pump, mode, flow, water level, filter/cleaning days |
-| Pet feeder `a1xEttfYqF2` | last feeding, portions today, schedule, switches, battery |
+| Pet water fountain `a163VQp0e0e` | pump, mode, flow, water level, filter/cleaning days and intervals, alerts |
+| Pet feeder `a1xEttfYqF2` | last feeding, portions today, editable schedule, feeding events, alerts, switches, battery |
 
 **Mapped but less tested:** air conditioners, heaters, dehumidifiers,
 oil-filled radiators (climate: power and target temperature), kettles

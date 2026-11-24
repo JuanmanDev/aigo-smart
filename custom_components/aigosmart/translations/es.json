@@ -111,6 +111,20 @@
           "description": "Identificadores de propiedad y valores como mapa, por ejemplo LightMode: 1."
         }
       }
+    },
+    "set_feeding_plan": {
+      "name": "Programar comidas",
+      "description": "Sustituye toda la programación de comidas de un comedero (añade o quita comidas, como la app). Cada comida se repite todos los días. Para cambiar una comida existente, usa sus entidades Meal.",
+      "fields": {
+        "device_id": {
+          "name": "Comedero",
+          "description": "El comedero AigoSmart."
+        },
+        "meals": {
+          "name": "Comidas",
+          "description": "Lista de comidas: hora (HH:MM), raciones y, opcionalmente, enabled (por defecto true)."
+        }
+      }
     }
   }
 }

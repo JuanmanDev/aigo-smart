@@ -28,6 +28,9 @@ sys.modules["homeassistant.components.select"] = MagicMock()
 # switch.py also imports the air fryer and pet modules, which use these
 sys.modules["homeassistant.components.number"] = MagicMock()
 sys.modules["homeassistant.components.button"] = MagicMock()
+sys.modules["homeassistant.components.binary_sensor"] = MagicMock()
+sys.modules["homeassistant.components.event"] = MagicMock()
+sys.modules["homeassistant.components.time"] = MagicMock()
 sys.modules["homeassistant.components.sensor"] = MagicMock()
 sys.modules["homeassistant.util"] = MagicMock()
 sys.modules["homeassistant.util.dt"] = MagicMock()
@@ -77,6 +80,9 @@ sys.modules["homeassistant.components.select"].SelectEntity = MockEntity
 sys.modules["homeassistant.components.number"].NumberEntity = type("NumberEntity", (MockEntity,), {})
 sys.modules["homeassistant.components.number"].RestoreNumber = type("RestoreNumber", (MockEntity,), {})
 sys.modules["homeassistant.components.button"].ButtonEntity = type("ButtonEntity", (MockEntity,), {})
+for _mod, _cls in (("binary_sensor", "BinarySensorEntity"), ("event", "EventEntity"),
+                   ("time", "TimeEntity")):
+    setattr(sys.modules[f"homeassistant.components.{_mod}"], _cls, type(_cls, (MockEntity,), {}))
 sys.modules["homeassistant.components.sensor"].SensorEntity = type("SensorEntity", (MockEntity,), {})
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
 

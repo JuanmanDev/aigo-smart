@@ -16,7 +16,8 @@ for _mod in (
     "homeassistant.helpers.update_coordinator", "homeassistant.const",
     "homeassistant.exceptions", "homeassistant.components",
     "homeassistant.components.light", "homeassistant.components.number",
-    "homeassistant.components.button",
+    "homeassistant.components.button", "homeassistant.components.binary_sensor",
+    "homeassistant.components.event", "homeassistant.components.time",
     "homeassistant.components.select", "homeassistant.components.sensor",
     "homeassistant.components.switch", "homeassistant.components.water_heater",
     "homeassistant.util", "homeassistant.util.dt",
@@ -40,7 +41,9 @@ class MockCoordinatorEntity:
 for _mod, _cls in (("number", "NumberEntity"), ("select", "SelectEntity"),
                    ("sensor", "SensorEntity"), ("switch", "SwitchEntity"),
                    ("water_heater", "WaterHeaterEntity"), ("light", "LightEntity"),
-                   ("number", "RestoreNumber"), ("button", "ButtonEntity")):
+                   ("number", "RestoreNumber"), ("button", "ButtonEntity"),
+                   ("binary_sensor", "BinarySensorEntity"), ("event", "EventEntity"),
+                   ("time", "TimeEntity")):
     setattr(sys.modules[f"homeassistant.components.{_mod}"], _cls, type(_cls, (_Entity,), {}))
 sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = MockCoordinatorEntity
 sys.modules["homeassistant.core"].callback = lambda func: func

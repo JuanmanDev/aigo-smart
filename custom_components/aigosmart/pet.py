@@ -42,15 +42,28 @@ TSL (device diagnostics, #4) confirms the enums above and adds:
 Manual feeding is a button: it can only fire when pressed, never on startup,
 reload or state restore. The portions are a local setting (not written to
 the device until Feed is pressed).
+
+Alerts are binary sensors (problem / battery / running) derived from the
+codes above, so automations can use a plain on/off trigger. The feeding
+schedule is editable per meal (enabled switch, time, portions) and as a
+whole through the aigosmart.set_feeding_plan action; every edit rewrites the
+feedingPlan string from the latest snapshot and keeps the other meals (and
+their weekday masks) unchanged. A "Feeding" event entity fires for each new
+feedRecord entry, as "scheduled" when it matches an enabled meal's time.
 """
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from typing import Any
 
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.components.button import ButtonEntity
-from homeassistant.components.number import NumberMode, RestoreNumber
+from homeassistant.components.event import EventEntity
+from homeassistant.components.number import NumberEntity, NumberMode, RestoreNumber
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -58,6 +71,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.time import TimeEntity
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTime
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -160,6 +174,68 @@ def parse_feeding_plan(raw: Any) -> list[dict[str, Any]]:
     return slots
 
 
+EVERY_DAY_MASK = 0x7F
+MAX_PLAN_MEALS = 10      # the reporter's feeder has 4; the app's limit is not known
+SCHEDULE_MATCH_MINUTES = 3
+
+
+def encode_plan_item(mask: int, hour: int, minute: int, portions: int,
+                     enabled: bool) -> str:
+    return f"{mask:02X}{hour:02X}{minute:02X}{portions:02X}{1 if enabled else 0:02X}"
+
+
+def edit_feeding_plan(raw: Any, index: int, *, hour: int | None = None,
+                      minute: int | None = None, portions: int | None = None,
+                      enabled: bool | None = None) -> str | None:
+    """Change one meal of a feedingPlan string; None if that meal does not exist.
+
+    ``index`` counts the meals parse_feeding_plan returns. Every other item is
+    kept byte for byte, and the edited meal keeps its weekday mask.
+    """
+    if not isinstance(raw, str):
+        return None
+    items = raw.split(",")
+    seen = -1
+    for pos, item in enumerate(items):
+        if not parse_feeding_plan(item):
+            continue
+        seen += 1
+        if seen != index:
+            continue
+        item = item.strip()
+        mask, old_h, old_m, old_p, old_e = (int(item[i:i + 2], 16) for i in range(0, 10, 2))
+        items[pos] = encode_plan_item(
+            mask,
+            old_h if hour is None else hour,
+            old_m if minute is None else minute,
+            old_p if portions is None else portions,
+            bool(old_e) if enabled is None else enabled,
+        )
+        return ",".join(items)
+    return None
+
+
+def build_feeding_plan(meals: list[dict[str, Any]]) -> str:
+    """feedingPlan string for [{"time": time, "portions": n, "enabled": bool}], every day."""
+    return ",".join(
+        encode_plan_item(EVERY_DAY_MASK, meal["time"].hour, meal["time"].minute,
+                         int(meal["portions"]), bool(meal.get("enabled", True)))
+        for meal in sorted(meals, key=lambda m: (m["time"].hour, m["time"].minute)))
+
+
+def classify_feeding(when_local: datetime, slots: list[dict[str, Any]]) -> str:
+    """"scheduled" when a feed happened at an enabled meal's time, else "manual"."""
+    minute_of_day = when_local.hour * 60 + when_local.minute
+    for slot in slots:
+        if not slot["enabled"]:
+            continue
+        hour, minute = (int(x) for x in slot["time"].split(":"))
+        diff = abs(minute_of_day - (hour * 60 + minute))
+        if min(diff, 1440 - diff) <= SCHEDULE_MATCH_MINUTES:
+            return "scheduled"
+    return "manual"
+
+
 # --------------------------------------------------------------- base entity --
 
 class PetEntity(CoordinatorEntity):
@@ -233,7 +309,9 @@ class PetEntity(CoordinatorEntity):
         raise NotImplementedError
 
     async def _async_write(self, value: int) -> None:
-        items = {self._prop: int(value)}
+        await self._async_write_items({self._prop: int(value)})
+
+    async def _async_write_items(self, items: dict[str, Any]) -> None:
         if self._remember_writes:
             self._coordinator.remember_write(self._iot_id, items)
         self._coordinator.async_set_optimistic_props(
@@ -397,18 +475,6 @@ class FountainFilterRemaining(_DaysSensor):
 class FountainCleaningRemaining(_DaysSensor):
     _prop = "CleaningRemainderDay"
     _attr_name = "Cleaning due in"
-    _attr_icon = "mdi:spray-bottle"
-
-
-class FountainFilterInterval(_DaysSensor):
-    _prop = "FilterReplaceTime"
-    _attr_name = "Filter change interval"
-    _attr_icon = "mdi:air-filter"
-
-
-class FountainCleaningInterval(_DaysSensor):
-    _prop = "DeviceCleaningTime"
-    _attr_name = "Cleaning interval"
     _attr_icon = "mdi:spray-bottle"
 
 
@@ -701,24 +767,370 @@ class FeederVoicePrompt(_CodeSensor):
     _default_name = "Aigo pet feeder"
 
 
+# -------------------------------------------------------- interval numbers --
+
+class _IntervalNumber(PetEntity, NumberEntity):
+    """Filter / cleaning interval in days (rw in the TSL, set in the app)."""
+
+    _writes = True
+    _attr_mode = NumberMode.BOX
+    _attr_native_step = 1
+    _attr_native_unit_of_measurement = UnitOfTime.DAYS
+    _attr_entity_category = EntityCategory.CONFIG
+    _default_name = "Aigo pet fountain"
+    _value: int | None = None
+
+    def __init__(self, coordinator, dev, state) -> None:
+        tsl = coordinator.tsl_models.get(dev.get("productKey", "")) or {}
+        # TSL: 0-90 days (also the fallback until the TSL has been fetched)
+        self._attr_native_min_value, self._attr_native_max_value = tsl_int_range(
+            tsl, self.identifiers()[0], (0, 90))
+        super().__init__(coordinator, dev, state)
+
+    @property
+    def native_value(self) -> int | None:
+        return self._value
+
+    def _apply(self, props: dict) -> None:
+        if self._prop in props:
+            try:
+                self._value = int(props[self._prop])
+            except (TypeError, ValueError):
+                self._value = None
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self._async_write(int(value))
+
+
+class FountainFilterIntervalNumber(_IntervalNumber):
+    _prop = "FilterReplaceTime"
+    _attr_name = "Filter change interval"
+    _attr_icon = "mdi:air-filter"
+
+
+class FountainCleaningIntervalNumber(_IntervalNumber):
+    _prop = "DeviceCleaningTime"
+    _attr_name = "Cleaning interval"
+    _attr_icon = "mdi:spray-bottle"
+
+
+# Replaced by the numbers above; their old sensor entities are removed
+RETIRED_SENSOR_KEYS = ("FilterReplaceTime", "DeviceCleaningTime")
+
+
+# ------------------------------------------------------------ binary sensors --
+
+def _int_prop(props: dict, prop: str) -> int | None:
+    try:
+        return int(props[prop])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+class PetAlert(PetEntity, BinarySensorEntity):
+    """On / off from one or more codes; stays unknown until a code is seen."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _key = ""
+    _on: bool | None = None
+
+    @classmethod
+    def key(cls) -> str:
+        return cls._key
+
+    @classmethod
+    def wanted(cls, props: dict, tsl: dict) -> bool:
+        # every listed property feeds the test, so any one of them is enough
+        return any(p in props for p in cls.identifiers())
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._on
+
+    def _test(self, props: dict) -> bool | None:
+        raise NotImplementedError
+
+    def _apply(self, props: dict) -> None:
+        value = self._test(props)
+        if value is not None:
+            self._on = value
+
+
+class FountainWaterLow(PetAlert):
+    _props = ("WaterStatus", "errorCode")
+    _key = "alert_water_low"
+    _attr_name = "Water low"
+    _attr_icon = "mdi:water-alert"
+    _default_name = "Aigo pet fountain"
+
+    def _test(self, props: dict) -> bool | None:
+        status, error = _int_prop(props, "WaterStatus"), _int_prop(props, "errorCode")
+        if status is None and error is None:
+            return None
+        return status == 1 or error == 236
+
+
+class _DaysDue(PetAlert):
+    _default_name = "Aigo pet fountain"
+
+    def _test(self, props: dict) -> bool | None:
+        days = _int_prop(props, self._prop)
+        return None if days is None else days <= 0
+
+
+class FountainFilterDue(_DaysDue):
+    _prop = "FilterRemainderDay"
+    _key = "alert_filter_due"
+    _attr_name = "Filter change due"
+    _attr_icon = "mdi:air-filter"
+
+
+class FountainCleaningDue(_DaysDue):
+    _prop = "CleaningRemainderDay"
+    _key = "alert_cleaning_due"
+    _attr_name = "Cleaning due"
+    _attr_icon = "mdi:spray-bottle"
+
+
+class _CodeAlert(PetAlert):
+    _code = -1
+    _default_name = "Aigo pet feeder"
+
+    def _test(self, props: dict) -> bool | None:
+        code = _int_prop(props, self._prop)
+        return None if code is None else code == self._code
+
+
+class FeederFoodLow(_CodeAlert):
+    _prop = "errorCode"
+    _code = 244
+    _key = "alert_food_low"
+    _attr_name = "Food low"
+    _attr_icon = "mdi:food-drumstick-off"
+
+
+class FeederFoodJammed(_CodeAlert):
+    _prop = "errorCode"
+    _code = 245
+    _key = "alert_food_jammed"
+    _attr_name = "Food jammed"
+    _attr_icon = "mdi:alert-octagon"
+
+
+class FeederBatteryLow(_CodeAlert):
+    _prop = "errorCode"
+    _code = 247
+    _key = "alert_battery_low"
+    _attr_name = "Battery low"
+    _attr_device_class = BinarySensorDeviceClass.BATTERY
+
+
+class FeederFeeding(_CodeAlert):
+    _prop = "feedState"
+    _code = 1
+    _key = "feeding"
+    _attr_name = "Feeding"
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
+    _attr_icon = "mdi:food-drumstick"
+
+
+class FeederMainsPower(_CodeAlert):
+    _prop = "batteryState"
+    _code = 0
+    _key = "mains_power"
+    _attr_name = "Mains power"
+    _attr_device_class = BinarySensorDeviceClass.PLUG
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+
+# ------------------------------------------------------------ feeding plan --
+
+class _MealEntity(PetEntity):
+    """One meal of the feeding schedule (feedingPlan), by position."""
+
+    _prop = "feedingPlan"
+    _writes = True
+    _kind = ""
+    _attr_entity_category = EntityCategory.CONFIG
+    _default_name = "Aigo pet feeder"
+
+    def __init__(self, coordinator, dev, state, index: int) -> None:
+        self._index = index
+        self._slot: dict[str, Any] | None = None
+        super().__init__(coordinator, dev, state)
+        suffix = f"_{self._kind}" if self._kind else ""
+        self._attr_unique_id = f"{self._iot_id}_pet_feedingPlan_{index + 1}{suffix}"
+        self._attr_name = f"Meal {index + 1}{' ' + self._kind if self._kind else ''}"
+
+    @classmethod
+    def meal_key(cls, index: int) -> str:
+        return f"feedingPlan_{index + 1}_{cls._kind or 'enabled'}"
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._slot is not None
+
+    def _apply(self, props: dict) -> None:
+        if self._prop not in props:
+            return
+        slots = parse_feeding_plan(props[self._prop])
+        self._slot = slots[self._index] if self._index < len(slots) else None
+
+    async def _async_edit(self, **changes: Any) -> None:
+        raw = self._coordinator.props.get(self._iot_id, {}).get(self._prop)
+        new = edit_feeding_plan(raw, self._index, **changes)
+        if new is None:
+            _LOGGER.warning("AigoSmart: meal %d no longer exists on %s",
+                            self._index + 1, self._iot_id)
+            return
+        await self._async_write_items({self._prop: new})
+
+
+class FeederMealSwitch(_MealEntity, SwitchEntity):
+    _attr_icon = "mdi:calendar-clock"
+
+    @property
+    def is_on(self) -> bool | None:
+        return None if self._slot is None else self._slot["enabled"]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self._slot is None:
+            return {}
+        return {k: self._slot[k] for k in ("time", "portions", "every_day", "days_mask")}
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_edit(enabled=True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_edit(enabled=False)
+
+
+class FeederMealTime(_MealEntity, TimeEntity):
+    _kind = "time"
+    _attr_icon = "mdi:clock-outline"
+
+    @property
+    def native_value(self) -> time | None:
+        if self._slot is None:
+            return None
+        hour, minute = (int(x) for x in self._slot["time"].split(":"))
+        return time(hour, minute)
+
+    async def async_set_value(self, value: time) -> None:
+        await self._async_edit(hour=value.hour, minute=value.minute)
+
+
+class FeederMealPortions(_MealEntity, NumberEntity):
+    _kind = "portions"
+    _attr_icon = "mdi:bowl-mix"
+    _attr_mode = NumberMode.BOX
+    _attr_native_step = 1
+
+    def __init__(self, coordinator, dev, state, index: int) -> None:
+        tsl = coordinator.tsl_models.get(dev.get("productKey", "")) or {}
+        # assumed to share the manual feed's range (TSL: 1-24)
+        self._attr_native_min_value, self._attr_native_max_value = tsl_int_range(
+            tsl, PROP_MANUAL_FEEDING, MANUAL_FEED_DEFAULT_RANGE)
+        super().__init__(coordinator, dev, state, index)
+
+    @property
+    def native_value(self) -> int | None:
+        return None if self._slot is None else self._slot["portions"]
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self._async_edit(portions=int(value))
+
+
+MEAL_ENTITIES: dict[str, type[_MealEntity]] = {
+    "switch": FeederMealSwitch,
+    "time": FeederMealTime,
+    "number": FeederMealPortions,
+}
+
+
+# ------------------------------------------------------------- feed events --
+
+class FeederFeedEvent(PetEntity, EventEntity):
+    """Fires once per new feedRecord entry (never for history seen at startup)."""
+
+    _prop = "feedRecord"
+    _attr_name = "Feeding"
+    _attr_icon = "mdi:food-drumstick"
+    _attr_event_types = ["scheduled", "manual"]
+    _default_name = "Aigo pet feeder"
+    _newest: datetime | None = None
+
+    @classmethod
+    def key(cls) -> str:
+        return "feedRecord_event"
+
+    def _apply(self, props: dict) -> None:
+        if self._prop not in props:
+            return
+        records = parse_feed_record(props[self._prop])
+        if not records:
+            return
+        if self._newest is None:
+            self._newest = records[0][0]
+            return
+        fresh = [r for r in records if r[0] > self._newest]
+        if not fresh:
+            return
+        self._newest = fresh[0][0]
+        slots = parse_feeding_plan(props.get("feedingPlan"))
+        for when, portions in reversed(fresh):          # oldest first
+            local = dt_util.as_local(when)
+            self._trigger_event(classify_feeding(local, slots), {
+                "portions": portions,
+                "fed_at": when.isoformat(),
+            })
+            if getattr(self, "hass", None) is not None:
+                # one state per feed, so automations see each of them
+                self.async_write_ha_state()
+
+
 # ------------------------------------------------------------------- factory --
 
 FOUNTAIN_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
+    "binary_sensor": (FountainWaterLow, FountainFilterDue, FountainCleaningDue),
     "button": (FountainResetFilter, FountainResetCleaning),
+    "number": (FountainFilterIntervalNumber, FountainCleaningIntervalNumber),
     "switch": (FountainPump,),
     "select": (FountainMode, FountainFlow),
     "sensor": (FountainWaterLevel, FountainFilterRemaining,
-               FountainCleaningRemaining, FountainFilterInterval,
-               FountainCleaningInterval, FountainWaterStatus, FountainError),
+               FountainCleaningRemaining, FountainWaterStatus, FountainError),
 }
 
 FEEDER_ENTITIES: dict[str, tuple[type[PetEntity], ...]] = {
+    "binary_sensor": (FeederFoodLow, FeederFoodJammed, FeederBatteryLow,
+                      FeederFeeding, FeederMainsPower),
     "button": (FeederFeedButton,),
+    "event": (FeederFeedEvent,),
     "number": (FeederFeedPortions,),
     "switch": (FeederLight, FeederSlowFeed, FeederVoice),
     "sensor": (FeederLastFeed, FeederPortionsToday, FeederPlan, FeederBattery,
                FeederBatteryState, FeederFeedState, FeederError, FeederVoicePrompt),
 }
+
+
+def _make_meal_entities(platform: str, coordinator, dev: dict, state, props: dict,
+                        tsl: dict, known: set) -> list:
+    """Per-meal entities for each meal currently in the feeding plan."""
+    cls = MEAL_ENTITIES.get(platform)
+    if cls is None or "feedingPlan" not in props:
+        return []
+    if tsl_writable(tsl, "feedingPlan") is False:
+        return []
+    out = []
+    iot_id = dev.get("iotId", "")
+    for index in range(len(parse_feeding_plan(props["feedingPlan"]))):
+        key = f"{iot_id}_pet_{cls.meal_key(index)}_{platform}"
+        if key in known:
+            continue
+        known.add(key)
+        out.append(cls(coordinator, dev, state, index))
+    return out
 
 
 def make_pet_entities(platform: str, coordinator: AigoDataUpdateCoordinator,
@@ -733,10 +1145,12 @@ def make_pet_entities(platform: str, coordinator: AigoDataUpdateCoordinator,
         iot_id = dev.get("iotId", "")
         if not iot_id:
             continue
+        feeder = False
         if is_pet_fountain_device(dev, pk_catalog):
             classes = FOUNTAIN_ENTITIES.get(platform, ())
         elif is_pet_feeder_device(dev, pk_catalog):
             classes = FEEDER_ENTITIES.get(platform, ())
+            feeder = True
         else:
             continue
         props = coordinator.props.get(iot_id, {})
@@ -747,7 +1161,23 @@ def make_pet_entities(platform: str, coordinator: AigoDataUpdateCoordinator,
                 continue
             known.add(key)
             out.append(cls(coordinator, dev, state))
+        if feeder:
+            out.extend(_make_meal_entities(platform, coordinator, dev, state,
+                                           props, tsl, known))
     return out
+
+
+def remove_retired_entities(hass, entry, coordinator) -> None:
+    """Drop entities that newer versions replaced (e.g. interval sensors -> numbers)."""
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    for dev in coordinator.devices:
+        iot_id = dev.get("iotId", "")
+        for key in RETIRED_SENSOR_KEYS:
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{iot_id}_pet_{key}")
+            if entity_id:
+                registry.async_remove(entity_id)
 
 
 def setup_pet_platform(hass, entry, state: dict, platform: str,
@@ -757,6 +1187,8 @@ def setup_pet_platform(hass, entry, state: dict, platform: str,
     registry = state["registry"]
     pk_catalog: dict = state.get("pk_catalog", {})
     registry.register(platform)
+    if platform == "sensor":
+        remove_retired_entities(hass, entry, coordinator)
 
     @callback
     def _async_add(*_args) -> None:

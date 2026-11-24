@@ -38,3 +38,24 @@ discover_bluetooth:
   description: >
     Scan for Aigostar BLE devices (Breeze pairing service 0xFEB3) through the
     Home Assistant bluetooth integration and fire aigosmart_ble_found events.
+set_feeding_plan:
+  name: Set feeding schedule
+  description: >
+    Replace a pet feeder's whole feeding schedule (adds or removes meals, like
+    the app). Each meal runs every day. To change one existing meal, use its
+    Meal entities instead.
+  fields:
+    device_id:
+      name: Feeder
+      description: The AigoSmart pet feeder.
+      required: true
+      selector:
+        device:
+          integration: aigosmart
+    meals:
+      name: Meals
+      description: 'List of meals: time (HH:MM), portions, and optionally enabled (default true).'
+      required: true
+      example: '[{"time": "07:30", "portions": 2}, {"time": "19:00", "portions": 3}]'
+      selector:
+        object:
