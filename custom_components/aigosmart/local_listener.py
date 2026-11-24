@@ -60,12 +60,7 @@ class AlcsListener:
         import time
 
         from .lib import const
-        from .lib.local import (
-            COAP_NON_CONFIRMABLE,
-            CODE_POST,
-            alink_request,
-            build_coap,
-        )
+        from .lib.local import discovery_packet
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -85,10 +80,7 @@ class AlcsListener:
             # probe
             mid = (mid + 1) & 0xFFFF
             try:
-                payload = alink_request(mid, const.ALCS_METHOD_DISCOVERY, {})
-                pkt = build_coap(COAP_NON_CONFIRMABLE, CODE_POST, mid, bytes(4),
-                                 const.ALCS_DISCOVERY_TOPIC, payload)
-                sock.sendto(pkt, group)
+                sock.sendto(discovery_packet(mid), group)
             except OSError as exc:
                 _LOGGER.debug("ALCS probe failed: %s", exc)
 
@@ -105,41 +97,38 @@ class AlcsListener:
         _LOGGER.info("AigoSmart ALCS listener stopped")
 
     def _handle_packet(self, data: bytes, addr: tuple) -> None:
-        import json as _json
-
-        from .lib.local import parse_coap
+        from .lib.local import (
+            alink_response_of,
+            parse_coap,
+            parse_discovery,
+            remember_lan_device,
+        )
 
         try:
             msg = parse_coap(data)
             if not msg["payload"]:
                 return
-            body = _json.loads(msg["payload"].decode("utf-8", "replace"))
-        except Exception:
+            body = alink_response_of(msg["payload"])
+        except (ValueError, UnicodeDecodeError):
             return
 
-        params = body.get("params", body.get("data", {})) or {}
-        pk = params.get("productKey") or body.get("productKey") or ""
-        dn = params.get("deviceName") or body.get("deviceName") or ""
-        if not (pk or dn):
-            return
-
-        dev_id = pk + dn
-        with self._lock:
-            if dev_id in self._seen:
-                return
-            self._seen.add(dev_id)
-
-        info = {
-            "addr": addr[0],
-            "port": addr[1],
-            "productKey": pk,
-            "deviceName": dn,
-        }
-        _LOGGER.info("ALCS discovery: %s at %s:%s (pk=%s)", dn or dev_id,
-                     addr[0], addr[1], pk)
-        # dispatch into HA loop
-        self.hass.loop.call_soon_threadsafe(
-            self._fire, info)
+        for dev in parse_discovery(body, addr[0], addr[1]):
+            # local control looks devices up here (no extra multicast)
+            remember_lan_device(dev)
+            with self._lock:
+                if dev.dev_id in self._seen:
+                    continue
+                self._seen.add(dev.dev_id)
+            info = {
+                "addr": dev.addr,
+                "port": dev.port,
+                "productKey": dev.product_key,
+                "deviceName": dev.device_name,
+            }
+            _LOGGER.debug("ALCS discovery: productKey %s answered on the LAN",
+                          dev.product_key)
+            # dispatch into HA loop
+            self.hass.loop.call_soon_threadsafe(self._fire, info)
 
     @callback
     def _fire(self, info: dict) -> None:

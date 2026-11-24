@@ -16,7 +16,10 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import http.client
 import json
+import ssl
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -107,6 +110,117 @@ def _sign(secret: str, canonical: str) -> str:
     ).decode()
 
 
+# ---------------------------------------------------------------------------
+# Keep-alive HTTPS pool for the IoT gateway
+# ---------------------------------------------------------------------------
+
+# A kept-alive connection idle for longer than this is not reused (the
+# gateway may have closed it); within one poll, calls come back-to-back.
+POOL_IDLE_REUSE = 10.0
+POOL_MAX_IDLE = 4
+GATEWAY_TIMEOUT = 20
+
+# Network errors that mean "this kept-alive connection was already closed"
+_STALE_ERRORS = (http.client.RemoteDisconnected, http.client.BadStatusLine,
+                 ConnectionResetError, ConnectionAbortedError, BrokenPipeError)
+
+
+class HttpsPool:
+    """Thread-safe keep-alive HTTPS connections, one TLS context for all.
+
+    urllib opened a new TCP + TLS connection (and built a new SSL context)
+    for every call: 2 calls per device per poll. Re-using connections cuts
+    each call to a single round-trip.
+    """
+
+    def __init__(self, timeout: float = GATEWAY_TIMEOUT,
+                 max_idle: int = POOL_MAX_IDLE) -> None:
+        self._timeout = timeout
+        self._max_idle = max_idle
+        self._idle: dict[str, list[tuple[http.client.HTTPSConnection, float]]] = {}
+        self._lock = threading.Lock()
+        self._ctx: ssl.SSLContext | None = None
+
+    def _context(self) -> ssl.SSLContext:
+        with self._lock:
+            if self._ctx is None:
+                self._ctx = ssl.create_default_context()
+            return self._ctx
+
+    def _acquire(self, host: str) -> tuple[http.client.HTTPSConnection, bool]:
+        now = time.monotonic()
+        stale: list[http.client.HTTPSConnection] = []
+        conn = None
+        with self._lock:
+            conns = self._idle.get(host, [])
+            while conns:
+                candidate, since = conns.pop()
+                if now - since < POOL_IDLE_REUSE:
+                    conn = candidate
+                    break
+                stale.append(candidate)
+        for old in stale:
+            old.close()
+        if conn is not None:
+            return conn, True
+        return self._connect(host), False
+
+    def _connect(self, host: str) -> http.client.HTTPSConnection:
+        return http.client.HTTPSConnection(host, timeout=self._timeout,
+                                           context=self._context())
+
+    def _release(self, host: str, conn: http.client.HTTPSConnection) -> None:
+        with self._lock:
+            conns = self._idle.setdefault(host, [])
+            if len(conns) < self._max_idle:
+                conns.append((conn, time.monotonic()))
+                return
+        conn.close()
+
+    def post(self, url: str, body: bytes, headers: dict[str, str],
+             retry_stale: bool = True) -> tuple[int, bytes]:
+        """POST and return (status, body). Retries once on a stale connection
+        when ``retry_stale`` (only for requests that are safe to repeat)."""
+        parts = urllib.parse.urlsplit(url)
+        host = parts.netloc
+        target = parts.path + (f"?{parts.query}" if parts.query else "")
+        conn, reused = self._acquire(host)
+        try:
+            conn.request("POST", target, body=body, headers=headers)
+            resp = conn.getresponse()
+            data = resp.read()
+        except _STALE_ERRORS:
+            conn.close()
+            if reused and retry_stale:
+                return self.post(url, body, headers, retry_stale=False)
+            raise
+        except BaseException:
+            conn.close()
+            raise
+        if resp.will_close:
+            conn.close()
+        else:
+            self._release(host, conn)
+        return resp.status, data
+
+    def close(self) -> None:
+        with self._lock:
+            conns = [c for lst in self._idle.values() for c, _ in lst]
+            self._idle.clear()
+        for conn in conns:
+            conn.close()
+
+
+# Read-only gateway calls: safe to resend when a kept-alive connection turns
+# out to be closed. Writes (property set, service invoke, bind, session) are
+# never resent at this level.
+_REPEATABLE_PATHS = frozenset({
+    const.PATH_PROPS_GET, const.PATH_STATUS_GET, const.PATH_TSL_GET,
+    const.PATH_LIST_DEVICES, const.PATH_GET_BY_ACCOUNT_AND_DEV,
+    const.PATH_ALCS_ACCESS_INFO,
+})
+
+
 class AigoCloudClient:
     """High-level synchronous cloud client for one AigoSmart account."""
 
@@ -118,6 +232,9 @@ class AigoCloudClient:
         self.identity_id: str | None = None
         self.token_expire: int = 7200
         self.token_created: float = 0.0
+        self._pool = HttpsPool()
+        # one token refresh at a time (devices are polled in parallel)
+        self._refresh_lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # Generic IoT gateway call
@@ -180,16 +297,14 @@ class AigoCloudClient:
         }
 
         url = (base_url or self.iot_base) + path
-        req = urllib.request.Request(url, data=body_bytes, headers=headers, method="POST")
+        status, raw = self._pool.post(url, body_bytes, headers,
+                                      retry_stale=path in _REPEATABLE_PATHS)
         try:
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                result = json.loads(resp.read())
-        except urllib.error.HTTPError as exc:
-            raw = exc.read()
-            try:
-                result = json.loads(raw)
-            except Exception:
-                raise AigoApiError(f"HTTP {exc.code}: {raw[:300]!r}") from exc
+            result = json.loads(raw)
+        except ValueError as exc:
+            raise AigoApiError(f"HTTP {status}: {raw[:300]!r}") from exc
+        if not isinstance(result, dict):
+            raise AigoApiError(f"HTTP {status}: unexpected answer {raw[:300]!r}")
 
         if result.get("code", -1) != 200:
             raise AigoApiError(f"API error {path}: {result}", response=result)
@@ -399,11 +514,17 @@ class AigoCloudClient:
         self.token_expire = int(data.get("iotTokenExpire", 7200))
         self.token_created = time.time()
 
+    def _token_due(self) -> bool:
+        return time.time() - self.token_created > self.token_expire - 600
+
     def ensure_token(self) -> str:
         if self.iot_token is None:
             raise AigoApiError("Not logged in")
-        if time.time() - self.token_created > self.token_expire - 600:
-            self.refresh()
+        if self._token_due():
+            with self._refresh_lock:
+                # another thread may have refreshed while we waited
+                if self._token_due():
+                    self.refresh()
         assert self.iot_token is not None
         return self.iot_token
 

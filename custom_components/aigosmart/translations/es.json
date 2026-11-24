@@ -64,6 +64,17 @@
       "no_devices_found": "No se encontraron dispositivos Aigostar en modo emparejamiento. Mantén pulsado el botón de encendido unos 5 segundos e inténtalo de nuevo."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones",
+        "description": "Home Assistant lee el estado de cada dispositivo directamente por tu red local (ALCS) cuando el dispositivo responde ahí, y si no usa la nube. Las órdenes siguen yendo por la nube. La sección local_control de los diagnósticos de un dispositivo indica si la lectura local funciona para ese dispositivo.",
+        "data": {
+          "local_control": "Leer el estado de los dispositivos por la red local (experimental)"
+        }
+      }
+    }
+  },
   "issues": {
     "unsupported_device": {
       "title": "{name} todavía no es compatible",

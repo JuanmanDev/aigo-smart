@@ -287,9 +287,9 @@ class TestLocalFirstInitRegression(unittest.TestCase):
             self.assertEqual(client._local_ok, {})
             self.assertEqual(client._local_bad, {})
             # the exact paths that crashed in production:
-            # set_properties_prefer_local touches _local_ok on line 1
+            # get_properties_prefer_local touches _local_ok on line 1
             try:
-                client.set_properties_prefer_local("iot1", {"LightSwitch": 1})
+                client.get_properties_prefer_local("iot1")
             except Exception as exc:
                 # must NOT be AttributeError('_local_ok') — not logged in is fine
                 self.assertNotIsInstance(exc, AttributeError)

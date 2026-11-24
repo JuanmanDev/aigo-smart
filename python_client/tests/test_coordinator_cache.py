@@ -206,5 +206,63 @@ class TestAssumedState(unittest.TestCase):
         self.assertEqual(self.c.assumed_props(self.iot), {})
 
 
+class TestParallelPoll(unittest.IsolatedAsyncioTestCase):
+    """Devices are polled concurrently; local reads only when enabled."""
+
+    async def asyncSetUp(self):
+        import asyncio
+        self.asyncio = asyncio
+        hass = MagicMock()
+        self.running = 0
+        self.peak = 0
+
+        async def _executor(func, *args):
+            self.running += 1
+            self.peak = max(self.peak, self.running)
+            await asyncio.sleep(0.01)
+            try:
+                return func(*args)
+            finally:
+                self.running -= 1
+
+        hass.async_add_executor_job.side_effect = _executor
+        self.client = MagicMock()
+        self.devices = [{"iotId": f"d{i}", "productKey": "pk", "status": 1}
+                        for i in range(10)]
+        self.client.list_devices.return_value = self.devices
+        self.client.get_status.return_value = {"status": 1}
+        self.client.get_properties.side_effect = lambda iot_id: {"id": iot_id}
+        self.client.get_properties_prefer_local.side_effect = (
+            lambda iot_id, ids: {"id": iot_id, "local": ids})
+        self.c = AigoDataUpdateCoordinator(hass, self.client)
+        self.c.data = {"devices": [], "props": {}}
+
+    async def test_all_devices_polled_concurrently(self):
+        data = await self.c._async_update_data()
+        self.assertEqual(sorted(data["props"]), sorted(d["iotId"] for d in self.devices))
+        self.assertEqual(data["props"]["d3"]["id"], "d3")
+        self.assertGreater(self.peak, 1)
+        self.assertLessEqual(self.peak, coord_mod.POLL_CONCURRENCY)
+        self.client.get_properties_prefer_local.assert_not_called()
+
+    async def test_one_failing_device_does_not_fail_the_poll(self):
+        def _props(iot_id):
+            if iot_id == "d2":
+                raise OSError("boom")
+            return {"id": iot_id}
+        self.client.get_properties.side_effect = _props
+        data = await self.c._async_update_data()
+        self.assertEqual(data["props"]["d2"], {})
+        self.assertEqual(data["props"]["d5"]["id"], "d5")
+
+    async def test_local_reads_use_tsl_identifiers(self):
+        self.c.local_reads = True
+        self.c.tsl_models["pk"] = {"properties": [{"identifier": "Switch"},
+                                                  {"identifier": "mode"}]}
+        data = await self.c._async_update_data()
+        self.assertEqual(data["props"]["d1"]["local"], ["Switch", "mode"])
+        self.client.get_properties.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

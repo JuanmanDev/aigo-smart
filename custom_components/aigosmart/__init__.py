@@ -18,11 +18,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers import device_registry as dr
 
 from . import config_validation as cv
 from .api import AigoSmartApiClient, InvalidCredentialsError, NeedSecurityCodeError
-from .const import CONF_SECURITY_CODE, DOMAIN
+from .const import CONF_LOCAL_CONTROL, CONF_SECURITY_CODE, DOMAIN
 from .coordinator import AigoDataUpdateCoordinator
 from .discovery import DeviceRegistry, load_pk_catalog
 
@@ -98,21 +97,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .local_listener import async_start_listener
     await async_start_listener(hass)
 
-    # Register discovered LAN devices into the HA device registry as
-    # "via integration" placeholders so the user sees them in HA UI.
-    def _handle_alcs_event(event) -> None:
-        data = event.data
-        devreg = dr.async_get(hass)
-        d = devreg.async_get_or_create(
-            config_entry_id=entry.entry_id,
-            identifiers={(DOMAIN, data.get("productKey", "") + data.get("deviceName", ""))},
-            name=data.get("deviceName") or "ALCS device",
-            manufacturer="Aigostar",
-        )
-        _LOGGER.debug("ALCS device registered in HA registry: %s", d.name)
+    # LAN answers only feed the address cache used by local control: cloud
+    # devices are already in the registry (by iotId), so no placeholders.
 
-    entry.async_on_unload(
-        hass.bus.async_listen("aigosmart_alcs_found", _handle_alcs_event))
+    async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Apply option changes without a reload (credential updates reload anyway)."""
+        local = bool(entry.options.get(CONF_LOCAL_CONTROL, False))
+        if coordinator.local_reads != local:
+            coordinator.local_reads = local
+            _LOGGER.info("AigoSmart: local reads %s", "enabled" if local else "disabled")
+            await coordinator.async_request_refresh()
+
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
     # ---- services ----------------------------------------------------------
     async def _handle_sync(call: ServiceCall) -> None:

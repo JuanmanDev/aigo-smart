@@ -14,6 +14,8 @@ CONF_SECURITY_CODE = "security_code"
 CONF_REGION_HOST = "iot_host"
 CONF_SSID = "ssid"                # BLE provisioning: WiFi network
 CONF_WIFI_PASSWORD = "wifi_password"
+# Option: read device state over the LAN (ALCS) when possible (experimental)
+CONF_LOCAL_CONTROL = "local_control"
 
 # Defaults
 DEFAULT_SCAN_INTERVAL = 30
