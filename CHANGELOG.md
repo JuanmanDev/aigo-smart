@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-11-24
+
 ### Changed
 
 - **Faster cloud polling.** Cloud calls now re-use kept-alive HTTPS connections and one TLS context instead of opening a new connection for every call (measured against the gateway: about 190 ms for the first call, about 40 ms for each following one). Devices are polled four at a time instead of one after the other, and one slow or failing device no longer delays the rest. Only read calls are re-sent when a kept-alive connection turns out to be closed; writes are never repeated by the transport.
