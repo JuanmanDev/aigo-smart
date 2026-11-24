@@ -177,6 +177,19 @@ async def async_get_device_diagnostics(
             except Exception:
                 alcs_keys = []
 
+    # Local control: run every step once (LAN discovery, cloud key, session,
+    # read) so a report shows exactly where it stops. No addresses or keys.
+    local_probe: dict[str, Any] = {"enabled": bool(coordinator and coordinator.local_reads)}
+    if client and iot_id and hasattr(client, "probe_local"):
+        tsl_props = [p.get("identifier") for p in (tsl or {}).get("properties", []) or []
+                     if isinstance(p, dict) and p.get("identifier")]
+        try:
+            local_probe.update(await hass.async_add_executor_job(
+                client.probe_local, iot_id, tsl_props))
+        except Exception as exc:
+            local_probe["result"] = f"probe failed: {type(exc).__name__}"
+        local_probe["last_poll"] = getattr(client, "local_status", {}).get(iot_id)
+
     # LAN reachability: the cloud tells us nothing about local IPs; probe the
     # ALCS default port on the WAN-facing host is pointless, so we only report
     # the metadata needed to run `aigo_cli.py discover` on the LAN.
@@ -200,6 +213,7 @@ async def async_get_device_diagnostics(
             coordinator.assumed_props(iot_id) if coordinator and iot_id else {}),
         "tsl_model": tsl,
         "local_control": {
+            "check": local_probe,
             "alcs_access_info": alcs_keys or "not_available",
             "how_to_probe_lan": (
                 "Run: python aigo_cli.py discover  (multicast 224.0.1.187:5683) "

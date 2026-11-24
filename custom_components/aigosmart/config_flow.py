@@ -33,7 +33,13 @@ from homeassistant.helpers.selector import (
 )
 
 from .api import AigoSmartApiClient, InvalidCredentialsError, NeedSecurityCodeError
-from .const import CONF_SECURITY_CODE, CONF_SSID, CONF_WIFI_PASSWORD, DOMAIN
+from .const import (
+    CONF_LOCAL_CONTROL,
+    CONF_SECURITY_CODE,
+    CONF_SSID,
+    CONF_WIFI_PASSWORD,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -370,5 +376,15 @@ class AigoSmartConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class AigoSmartOptionsFlow(config_entries.OptionsFlow):
+    """Integration options (the entry reloads when they change)."""
+
     async def async_step_init(self, user_input=None):
-        return self.async_create_entry(title="", data={})
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+        current = self.config_entry.options.get(CONF_LOCAL_CONTROL, False)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Optional(CONF_LOCAL_CONTROL, default=current): bool,
+            }),
+        )

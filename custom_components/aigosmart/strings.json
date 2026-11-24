@@ -64,6 +64,17 @@
       "no_devices_found": "No Aigostar devices in pairing mode were found. Hold the device's power button for ~5 seconds and try again."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "description": "Home Assistant reads each device's state directly over your LAN (ALCS) when the device answers there, and uses the cloud otherwise. Commands still go through the cloud. The local_control section of a device's diagnostics shows whether local reads work for that device.",
+        "data": {
+          "local_control": "Read device state over the local network (experimental)"
+        }
+      }
+    }
+  },
   "issues": {
     "unsupported_device": {
       "title": "{name} is not supported yet",

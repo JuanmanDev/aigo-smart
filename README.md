@@ -50,8 +50,11 @@ Everything here was built by **reverse engineering the AigoSmart Android app**
   in pairing mode via **Bluetooth** and **WiFi**, and **provisions them over BLE**
   (sends WiFi credentials to the device + binds it to your AigoSmart account).
   Works through **ESPHome bluetooth proxy** — HA doesn't need its own BLE adapter.
-- **Local control** (experimental) — ALCS multicast discovery and CoAP control
-  for devices that accept local sessions
+- **Local reads** (experimental, off by default) — reads each device's state
+  directly over your LAN (ALCS: encrypted CoAP, the same protocol as
+  Alibaba's device SDK) and falls back to the cloud whenever the device
+  doesn't answer locally. Commands keep going through the cloud, so the
+  AigoSmart app stays in sync. See [Local control](#local-control-experimental)
 - **Full colour support** — colour property detected by *shape* from each
   device TSL model (Wi-Fi HSVColor and BLE Mesh RGB/HSL structs both work,
   with per-product 16-bit ranges) — colour engine from
@@ -231,6 +234,33 @@ the app. Local control speaks **ALCS** (CoAP over UDP, multicast
 cloud (`/alcs/device/accessInfo/get`).
 
 Full technical details: [`analysis/REVERSE_ENGINEERING.md`](analysis/REVERSE_ENGINEERING.md)
+
+Cloud calls re-use kept-alive HTTPS connections (one TLS handshake instead of
+one per call), and devices are polled four at a time instead of one after
+the other.
+
+### Local control (experimental)
+
+Turn it on in **Settings → Devices & services → AigoSmart → Configure →
+Read device state over the local network**. For each device, Home Assistant
+then:
+
+1. finds it on the LAN (multicast discovery, repeated in the background);
+2. gets the device's local key from the cloud (`/alcs/device/accessInfo/get`);
+3. opens an encrypted session (`core/service/auth`, AES-128 session key) and
+   reads the properties straight from the device.
+
+If any step fails, that device is read from the cloud as before and local is
+retried 10 minutes later. Writes always use the cloud: a local write is
+applied by the device but often doesn't reach the cloud, so the app would show
+old values.
+
+To check a device, download its diagnostics (device page → ⋮ → Download
+diagnostics) and look at `local_control.check`: `seen_on_lan`, `local_key`,
+`auth` and `result` show where it stops. It contains no IP addresses or keys.
+Local control needs Home Assistant on the same network as the devices (host
+networking for Docker) and UDP port 5683 not blocked. Devices whose cloud
+account has no local key can only be used through the cloud.
 
 ## Supported devices
 

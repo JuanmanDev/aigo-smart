@@ -31,6 +31,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import AigoSmartApiClient
 
+# same key as const.CONF_LOCAL_CONTROL (const is not imported here: the unit
+# tests load this module without its package)
+CONF_LOCAL_CONTROL = "local_control"
+
 # Status codes from the app's BaseDeviceStatus (classes11.dex):
 # NOT_ACTIVATED=0, ONLINE=1, OFFLINE=3, DISABLED=8. listBindingByAccount's
 # "status" is unreliable (online devices can report 3) — ambiguous values are
@@ -55,6 +59,9 @@ STATUS_RECHECK_COOLDOWN = POLL_INTERVAL - 5
 PROP_FAIL_OFFLINE_THRESHOLD = 2
 # Consecutive /thing/status/get failures after which a device is marked offline
 STATUS_FAIL_OFFLINE_THRESHOLD = 2
+# Devices polled at the same time (each poll = status + properties calls);
+# sequential polling took ~1 s per device, so 10 devices took ~10 s
+POLL_CONCURRENCY = 4
 
 EVENT_DEVICES_CHANGED = "aigosmart_devices_changed"
 
@@ -98,6 +105,10 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
         self._raw_props: dict[str, dict[str, Any]] = {}
         # optional persistence (homeassistant.helpers.storage.Store)
         self._assumed_store = None
+        # read device state over the LAN when possible (options flow)
+        options = getattr(entry, "options", None)
+        self.local_reads = bool(isinstance(options, dict)
+                                and options.get(CONF_LOCAL_CONTROL, False))
 
     @property
     def devices(self) -> list[dict]:
@@ -284,9 +295,11 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_refresh_device(self, iot_id: str) -> None:
         """Poll and update state for a single device after a command."""
+        dev = next((d for d in self.devices if d.get("iotId") == iot_id),
+                   {"iotId": iot_id})
         try:
             cloud_props = await self.hass.async_add_executor_job(
-                self.client.get_properties, iot_id
+                self._read_props, dev
             )
             merged = self._merge_props(iot_id, cloud_props)
             self.data.setdefault("props", {})[iot_id] = merged
@@ -321,6 +334,46 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
                 f"AigoSmart login refused, re-authentication required: {failure}"
             ) from failure
 
+    def _read_props(self, dev: dict) -> dict[str, Any]:
+        """Device properties: over the LAN when enabled and possible, else cloud."""
+        iot_id = dev["iotId"]
+        if self.local_reads and hasattr(self.client, "get_properties_prefer_local"):
+            tsl = self.tsl_models.get(dev.get("productKey", "")) or {}
+            identifiers = [p.get("identifier") for p in tsl.get("properties", []) or []
+                           if isinstance(p, dict) and p.get("identifier")]
+            return self.client.get_properties_prefer_local(iot_id, identifiers)
+        return self.client.get_properties(iot_id)
+
+    async def _async_poll_device(self, dev: dict) -> dict[str, Any]:
+        """Online check + property poll for one device (never raises)."""
+        iot_id = dev["iotId"]
+        try:
+            online = await self.hass.async_add_executor_job(self._resolve_online, dev)
+        except Exception as exc:  # one device must not fail the whole poll
+            _LOGGER.debug("Online check failed for %s: %s", iot_id, exc)
+            online = self.is_device_online(iot_id)
+        if not online:
+            # Offline: the cloud would only return the stale shadow from
+            # before the device lost power — keep what we have and drop
+            # optimistic holds so nothing is "settling" on reconnect.
+            self._optimistic_locks.pop(iot_id, None)
+            return dict(self.data.get("props", {}).get(iot_id, {}))
+        try:
+            cloud_props = await self.hass.async_add_executor_job(self._read_props, dev)
+        except Exception as exc:
+            fails = self._prop_fail_count.get(iot_id, 0) + 1
+            self._prop_fail_count[iot_id] = fails
+            _LOGGER.debug("Property poll failed (%d) for %s: %s",
+                          fails, iot_id, exc)
+            if fails >= PROP_FAIL_OFFLINE_THRESHOLD:
+                # Device unreachable on consecutive polls — mark offline
+                # right away instead of waiting for the status cooldown.
+                self._online_cache[iot_id] = (False, time.time())
+                self._optimistic_locks.pop(iot_id, None)
+            return self._merge_props(iot_id, {})
+        self._prop_fail_count[iot_id] = 0
+        return self._merge_props(iot_id, cloud_props)
+
     async def _async_update_data(self) -> dict:
         self._raise_if_auth_failed()
         # Full device list every Nth poll, else properties only.
@@ -337,42 +390,18 @@ class AigoDataUpdateCoordinator(DataUpdateCoordinator):
             self._poll_count += 1
             devices = self.data.get("devices", [])
 
-        # Resolve online state for every device via /thing/status/get
-        online_ids: set[str] = set()
-        for dev in devices:
-            iot_id = dev.get("iotId")
-            if iot_id and await self.hass.async_add_executor_job(
-                    self._resolve_online, dev):
-                online_ids.add(iot_id)
+        # Status + properties per device, several devices at a time
+        semaphore = asyncio.Semaphore(POLL_CONCURRENCY)
 
-        props: dict[str, dict] = {}
-        for dev in devices:
+        async def _poll(dev: dict) -> tuple[str, dict] | None:
             iot_id = dev.get("iotId")
             if not iot_id:
-                continue
-            if iot_id not in online_ids:
-                # Offline: the cloud would only return the stale shadow from
-                # before the device lost power — keep what we have and drop
-                # optimistic holds so nothing is "settling" on reconnect.
-                self._optimistic_locks.pop(iot_id, None)
-                props[iot_id] = dict(self.data.get("props", {}).get(iot_id, {}))
-                continue
-            try:
-                cloud_props = await self.hass.async_add_executor_job(
-                    self.client.get_properties, iot_id)
-                self._prop_fail_count[iot_id] = 0
-                props[iot_id] = self._merge_props(iot_id, cloud_props)
-            except Exception as exc:  # one offline device must not kill the batch
-                fails = self._prop_fail_count.get(iot_id, 0) + 1
-                self._prop_fail_count[iot_id] = fails
-                _LOGGER.debug("Property poll failed (%d) for %s: %s",
-                              fails, iot_id, exc)
-                if fails >= PROP_FAIL_OFFLINE_THRESHOLD:
-                    # Device unreachable on consecutive polls — mark offline
-                    # right away instead of waiting for the status cooldown.
-                    self._online_cache[iot_id] = (False, time.time())
-                    self._optimistic_locks.pop(iot_id, None)
-                props[iot_id] = self._merge_props(iot_id, {})
+                return None
+            async with semaphore:
+                return iot_id, await self._async_poll_device(dev)
+
+        results = await asyncio.gather(*(_poll(dev) for dev in devices))
+        props: dict[str, dict] = dict(r for r in results if r is not None)
 
         # A per-device call may have hit the refused re-login
         self._raise_if_auth_failed()

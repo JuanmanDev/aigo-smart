@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Faster cloud polling.** Cloud calls now re-use kept-alive HTTPS connections and one TLS context instead of opening a new connection for every call (measured against the gateway: about 190 ms for the first call, about 40 ms for each following one). Devices are polled four at a time instead of one after the other, and one slow or failing device no longer delays the rest. Only read calls are re-sent when a kept-alive connection turns out to be closed; writes are never repeated by the transport.
+- Token refresh is serialised, so parallel polls can't refresh the session several times at once.
+
+### Fixed
+
+- **Local control (ALCS) rewritten to the real protocol.** The old implementation could not work with any device: the CoAP header byte was built wrong (type and token length in the wrong bits), so every packet was malformed; discovery answers in the device SDK's format (`data.devices.profile[]`) were not recognised; and the session handshake and encryption did not match. The new client follows Alibaba's device SDK (iotkit-embedded v3): `core/service/auth` with the cloud-issued accessKey/accessToken and a signed random key, an AES-128 session key, encrypted `thing.service.property.get/set` with the session-id option, re-authentication when the device drops the session, and separate (non-piggybacked) responses. It's covered by tests against a simulated device built from the SDK's device side, but hasn't been confirmed on a real Aigostar device yet.
+- LAN discovery no longer creates empty placeholder devices in the device registry; it only records where devices answer.
+
+### Added
+
+- Option **Read device state over the local network (experimental)** (Configure on the integration card, off by default): reads device state over the LAN when the device answers there, with automatic fallback to the cloud. Commands still go through the cloud. English and Spanish translations.
+- Device diagnostics: a `local_control.check` section runs each local step once (seen on the LAN, local key available, session, read) and shows where it stops, without IP addresses or keys.
+
 ## [0.10.1] - 2026-11-24
 
 ### Fixed
